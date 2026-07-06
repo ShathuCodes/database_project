@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Staff — Forensic MIS{% endblock %}
+{% block page_title %}{{ action }} Staff{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">{{ action }} Staff Member</h5>
+  <a href="{{ url_for('staff.list_staff') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="table-card p-4" style="max-width:600px">
+  <form method="POST">
+    <div class="row g-3">
+      <div class="col-12">
+        <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
+        <input type="text" name="full_name" class="form-control" required
+               value="{{ record.full_name if record else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Role <span class="text-danger">*</span></label>
+        <select name="role" class="form-select" required>
+          <option value="">— Select —</option>
+          {% for r in roles %}
+          <option value="{{ r }}" {{ 'selected' if record and record.role == r }}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Specialization</label>
+        <input type="text" name="specialization" class="form-control"
+               value="{{ record.specialization if record else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Contact</label>
+        <input type="text" name="contact" class="form-control"
+               value="{{ record.contact if record else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Email</label>
+        <input type="email" name="email" class="form-control"
+               value="{{ record.email if record else '' }}">
+      </div>
+      <div class="col-12 d-flex gap-2 pt-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>{{ action }} Staff
+        </button>
+        <a href="{{ url_for('staff.list_staff') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

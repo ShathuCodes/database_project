@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Lab Test — Forensic MIS{% endblock %}
+{% block page_title %}{{ action }} Lab Test{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">{{ action }} Lab Test</h5>
+  <a href="{{ url_for('lab.list_tests') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="table-card p-4" style="max-width:720px">
+  <form method="POST">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Case <span class="text-danger">*</span></label>
+        <select name="case_id" class="form-select" required>
+          <option value="">— Select Case —</option>
+          {% for c in cases %}
+          <option value="{{ c.case_id }}"
+            {{ 'selected' if record and record.case_id == c.case_id }}>{{ c.case_number }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Evidence (optional)</label>
+        <select name="evidence_id" class="form-select">
+          <option value="">— None —</option>
+          {% for ev in evidence %}
+          <option value="{{ ev.evidence_id }}"
+            {{ 'selected' if record and record.evidence_id == ev.evidence_id }}>
+            [Case {{ ev.case_id }}] {{ ev.evidence_type }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Test Type <span class="text-danger">*</span></label>
+        <input type="text" name="test_type" class="form-control" required
+               value="{{ record.test_type if record else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          {% for s in lab_statuses %}
+          <option value="{{ s }}"
+            {{ 'selected' if record and record.status == s or (not record and s == 'Pending') }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Requested By</label>
+        <select name="requested_by" class="form-select">
+          <option value="">— Select Staff —</option>
+          {% for s in staff %}
+          <option value="{{ s.staff_id }}"
+            {{ 'selected' if record and record.requested_by == s.staff_id }}>{{ s.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Tested By</label>
+        <input type="text" name="tested_by" class="form-control"
+               value="{{ record.tested_by if record else '' }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Test Date</label>
+        <input type="date" name="test_date" class="form-control"
+               value="{{ record.test_date if record else '' }}">
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold small">Result</label>
+        <textarea name="result" class="form-control" rows="3">{{ record.result if record else '' }}</textarea>
+      </div>
+      <div class="col-12 d-flex gap-2 pt-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>{{ action }} Test
+        </button>
+        <a href="{{ url_for('lab.list_tests') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

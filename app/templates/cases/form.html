@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Case — Forensic MIS{% endblock %}
+{% block page_title %}{{ action }} Case{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">{{ action }} Forensic Case</h5>
+  <a href="{{ url_for('cases.list_cases') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="table-card p-4">
+  <form method="POST">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Case Number</label>
+        <input type="text" name="case_number" class="form-control"
+               value="{{ case.case_number if case else '' }}"
+               placeholder="Auto-generated if blank">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Patient <span class="text-danger">*</span></label>
+        <select name="patient_id" class="form-select" required>
+          <option value="">— Select Patient —</option>
+          {% for p in patients %}
+          <option value="{{ p.patient_id }}"
+            {{ 'selected' if case and case.patient_id == p.patient_id }}>{{ p.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Case Type <span class="text-danger">*</span></label>
+        <select name="case_type" class="form-select" required>
+          <option value="">— Select Type —</option>
+          {% for t in case_types %}
+          <option value="{{ t }}" {{ 'selected' if case and case.case_type == t }}>{{ t }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          {% for s in statuses %}
+          <option value="{{ s }}" {{ 'selected' if case and case.status == s or (not case and s == 'Open') }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Incident Date</label>
+        <input type="date" name="incident_date" class="form-control"
+               value="{{ case.incident_date if case else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Police Reference</label>
+        <input type="text" name="police_ref" class="form-control"
+               value="{{ case.police_ref if case else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Court Reference</label>
+        <input type="text" name="court_ref" class="form-control"
+               value="{{ case.court_ref if case else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Police Station</label>
+        <input type="text" name="police_station" class="form-control"
+               value="{{ case.police_station if case else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Magistrate</label>
+        <input type="text" name="magistrate" class="form-control"
+               value="{{ case.magistrate if case else '' }}">
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold small">Assigned Doctors</label>
+        <select name="doctor_ids" class="form-select" multiple size="4">
+          {% for d in doctors %}
+          <option value="{{ d.staff_id }}"
+            {{ 'selected' if assigned_doctor_ids is defined and d.staff_id|string in assigned_doctor_ids }}>
+            {{ d.full_name }}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Hold Ctrl/Cmd to select multiple doctors.</div>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold small">Description</label>
+        <textarea name="description" class="form-control" rows="3">{{ case.description if case else '' }}</textarea>
+      </div>
+      <div class="col-12 d-flex gap-2 pt-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>{{ action }} Case
+        </button>
+        <a href="{{ url_for('cases.list_cases') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

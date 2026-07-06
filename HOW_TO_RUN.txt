@@ -1,0 +1,42 @@
+=======================================================
+  FORENSIC MIS — HOW TO RUN
+=======================================================
+
+STEP 1: Open .env file and change DB_PASSWORD
+----------------------------------------------
+Open the .env file in your project folder.
+Change DB_PASSWORD=postgres to your actual PostgreSQL password.
+
+Example:
+  DB_PASSWORD=mypassword123
+
+----------------------------------------------
+STEP 2: Create the database in pgAdmin
+----------------------------------------------
+Open pgAdmin → right click Databases → Create → Database
+Name: forensic_db
+
+----------------------------------------------
+STEP 3: Run the schema in pgAdmin
+----------------------------------------------
+Click forensic_db → Query Tool
+Open db_schema/schema.sql → Run (F5)
+
+----------------------------------------------
+STEP 4: Activate venv and run
+----------------------------------------------
+In VS Code terminal, inside your project folder:
+
+  venv\Scripts\activate
+  python run.py
+
+----------------------------------------------
+STEP 5: Open browser
+----------------------------------------------
+  http://127.0.0.1:5000
+
+Default login after init-db:
+  Username: admin
+  Password: Password123
+
+=======================================================

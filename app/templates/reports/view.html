@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+{% block title %}{{ report.case_number }} Report — Forensic MIS{% endblock %}
+{% block page_title %}Court Report{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">{{ report.report_type or 'Court Report' }}</h5>
+    <span class="text-muted small">Case: {{ report.case_number }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    {% if current_user.role == 'Hospital Management' %}
+    <a href="{{ url_for('reports.edit_report', rid=report.report_id) }}" class="btn btn-sm btn-outline-warning">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+    {% endif %}
+    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary no-print">
+      <i class="bi bi-printer me-1"></i>Print
+    </button>
+    <a href="{{ url_for('reports.list_reports') }}" class="btn btn-sm btn-outline-secondary no-print">
+      <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+  </div>
+</div>
+
+<div class="table-card p-4">
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <table class="table table-sm mb-0">
+        <tr><td class="text-muted fw-semibold" style="width:160px">Case Number</td><td><code>{{ report.case_number }}</code></td></tr>
+        <tr><td class="text-muted fw-semibold">Case Type</td><td>{{ report.case_type or '—' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Patient</td><td>{{ report.patient_name or '—' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Examining Doctor</td><td>{{ report.doctor_name or '—' }}</td></tr>
+      </table>
+    </div>
+    <div class="col-md-6">
+      <table class="table table-sm mb-0">
+        <tr><td class="text-muted fw-semibold" style="width:160px">Report Type</td><td>{{ report.report_type or '—' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Court</td><td>{{ report.court_name or '—' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Submission Date</td><td>{{ report.submission_date or '—' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Status</td>
+          <td><span class="badge rounded-pill
+            {% if report.status == 'Draft' %}badge-draft
+            {% elif report.status == 'Submitted' %}badge-submitted
+            {% elif report.status == 'Accepted' %}badge-accepted
+            {% else %}badge-rejected{% endif %}">{{ report.status }}</span></td></tr>
+      </table>
+    </div>
+  </div>
+  <hr>
+  <h6 class="fw-semibold mb-3 text-muted small text-uppercase">Report Content</h6>
+  <div style="white-space:pre-wrap; font-family:inherit; font-size:.9rem; line-height:1.7;">{{ report.content or 'No content.' }}</div>
+</div>
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}Cases — Forensic MIS{% endblock %}
+{% block page_title %}Case Management{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">All Cases</h5>
+  {% if current_user.role == 'Hospital Management' %}
+  <a href="{{ url_for('cases.add_case') }}" class="btn btn-primary btn-sm">
+    <i class="bi bi-plus-lg me-1"></i> New Case
+  </a>
+  {% endif %}
+</div>
+
+<div class="filter-bar">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold mb-1">Search</label>
+      <input name="search" class="form-control form-control-sm"
+             placeholder="Case No., Police Ref, Patient" value="{{ search }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-semibold mb-1">Type</label>
+      <select name="case_type" class="form-select form-select-sm">
+        <option value="">All Types</option>
+        {% for t in case_types %}
+        <option value="{{ t }}" {{ 'selected' if case_type == t }}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-semibold mb-1">Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All Status</option>
+        {% for s in statuses %}
+        <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-semibold mb-1">From Date</label>
+      <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+    </div>
+    <div class="col-md-2">
+      <label class="form-label small fw-semibold mb-1">To Date</label>
+      <input type="date" name="date_to" class="form-control form-control-sm" value="{{ date_to }}">
+    </div>
+    <div class="col-md-1 d-flex gap-1 flex-column">
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      <a href="{{ url_for('cases.list_cases') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead>
+        <tr>
+          <th>Case No.</th><th>Patient</th><th>Type</th>
+          <th>Incident Date</th><th>Police Ref</th><th>Status</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in cases %}
+        <tr>
+          <td><code>{{ c.case_number }}</code></td>
+          <td>{{ c.patient_name or '—' }}</td>
+          <td><span class="badge bg-light text-dark border">{{ c.case_type }}</span></td>
+          <td>{{ c.incident_date or '—' }}</td>
+          <td>{{ c.police_ref or '—' }}</td>
+          <td>
+            <span class="badge rounded-pill
+              {% if c.status == 'Open' %}badge-open
+              {% elif c.status == 'In Progress' %}badge-inprog
+              {% else %}badge-closed{% endif %}">
+              {{ c.status }}
+            </span>
+          </td>
+          <td>
+            <a href="{{ url_for('cases.view_case', cid=c.case_id) }}"
+               class="btn btn-sm btn-outline-info me-1"><i class="bi bi-eye"></i></a>
+            {% if current_user.role == 'Hospital Management' %}
+            <a href="{{ url_for('cases.edit_case', cid=c.case_id) }}"
+               class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+            {% if current_user.role == 'Hospital Management' %}
+            <form method="POST" action="{{ url_for('cases.delete_case', cid=c.case_id) }}"
+                  class="d-inline"
+                  onsubmit="return confirm('Delete case {{ c.case_number }}?')">
+              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-center text-muted py-5">No cases found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-3 text-muted small border-top">Showing {{ cases|length }} record(s)</div>
+</div>
+{% endblock %}

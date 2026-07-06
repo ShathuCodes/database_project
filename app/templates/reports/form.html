@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Report — Forensic MIS{% endblock %}
+{% block page_title %}{{ action }} Court Report{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">{{ action }} Court Report</h5>
+  <a href="{{ url_for('reports.list_reports') }}" class="btn btn-sm btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Back
+  </a>
+</div>
+
+<div class="table-card p-4" style="max-width:800px">
+  <form method="POST">
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Case <span class="text-danger">*</span></label>
+        <select name="case_id" class="form-select" required>
+          <option value="">— Select Case —</option>
+          {% for c in cases %}
+          <option value="{{ c.case_id }}"
+            {{ 'selected' if report and report.case_id == c.case_id }}>{{ c.case_number }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label fw-semibold small">Examining Doctor</label>
+        <select name="doctor_id" class="form-select">
+          <option value="">— Select Doctor —</option>
+          {% for d in doctors %}
+          <option value="{{ d.staff_id }}"
+            {{ 'selected' if report and report.doctor_id == d.staff_id }}>{{ d.full_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Report Type</label>
+        <input type="text" name="report_type" class="form-control"
+               value="{{ report.report_type if report else '' }}"
+               placeholder="e.g. Autopsy, MLO Certificate">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Court Name</label>
+        <input type="text" name="court_name" class="form-control"
+               value="{{ report.court_name if report else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Submission Date</label>
+        <input type="date" name="submission_date" class="form-control"
+               value="{{ report.submission_date if report else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label fw-semibold small">Status</label>
+        <select name="status" class="form-select">
+          {% for s in rpt_statuses %}
+          <option value="{{ s }}"
+            {{ 'selected' if report and report.status == s or (not report and s == 'Draft') }}>{{ s }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-12">
+        <label class="form-label fw-semibold small">Report Content</label>
+        <textarea name="content" class="form-control" rows="10"
+                  placeholder="Enter the full report content here...">{{ report.content if report else '' }}</textarea>
+      </div>
+      <div class="col-12 d-flex gap-2 pt-2">
+        <button type="submit" class="btn btn-primary">
+          <i class="bi bi-check-lg me-1"></i>{{ action }} Report
+        </button>
+        <a href="{{ url_for('reports.list_reports') }}" class="btn btn-outline-secondary">Cancel</a>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

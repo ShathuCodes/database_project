@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% block title %}{{ case.case_number if case else 'New Case' }} — Forensic MIS{% endblock %}
+{% block page_title %}Case Detail{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h5 class="fw-bold mb-0">{{ case.case_number }}</h5>
+    <span class="text-muted small">{{ case.case_type }}</span>
+  </div>
+  <div class="d-flex gap-2">
+    {% if current_user.role == 'Hospital Management' %}
+    <a href="{{ url_for('cases.edit_case', cid=case.case_id) }}" class="btn btn-sm btn-outline-warning">
+      <i class="bi bi-pencil me-1"></i>Edit
+    </a>
+    {% endif %}
+    <a href="{{ url_for('cases.list_cases') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i>Back
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="table-card p-4 h-100">
+      <h6 class="fw-semibold mb-3 text-muted small text-uppercase">Case Information</h6>
+      <table class="table table-sm mb-0">
+        <tr><td class="text-muted" style="width:160px">Case No.</td><td><code>{{ case.case_number }}</code></td></tr>
+        <tr><td class="text-muted">Type</td><td>{{ case.case_type }}</td></tr>
+        <tr><td class="text-muted">Status</td>
+          <td><span class="badge rounded-pill
+            {% if case.status == 'Open' %}badge-open
+            {% elif case.status == 'In Progress' %}badge-inprog
+            {% else %}badge-closed{% endif %}">{{ case.status }}</span></td></tr>
+        <tr><td class="text-muted">Incident Date</td><td>{{ case.incident_date or '—' }}</td></tr>
+        <tr><td class="text-muted">Admission</td><td>{{ case.admission_date or '—' }}</td></tr>
+        <tr><td class="text-muted">Police Ref</td><td>{{ case.police_ref or '—' }}</td></tr>
+        <tr><td class="text-muted">Court Ref</td><td>{{ case.court_ref or '—' }}</td></tr>
+        <tr><td class="text-muted">Police Station</td><td>{{ case.police_station or '—' }}</td></tr>
+        <tr><td class="text-muted">Magistrate</td><td>{{ case.magistrate or '—' }}</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="table-card p-4">
+      <h6 class="fw-semibold mb-3 text-muted small text-uppercase">Patient / Victim</h6>
+      <table class="table table-sm mb-0">
+        <tr><td class="text-muted" style="width:120px">Name</td><td>{{ case.patient_name or '—' }}</td></tr>
+        <tr><td class="text-muted">NIC</td><td>{{ case.nic or '—' }}</td></tr>
+        <tr><td class="text-muted">Gender</td><td>{{ case.gender or '—' }}</td></tr>
+        <tr><td class="text-muted">DOB</td><td>{{ case.dob or '—' }}</td></tr>
+      </table>
+      <h6 class="fw-semibold mt-3 mb-2 text-muted small text-uppercase">Assigned Doctors</h6>
+      {% if doctors %}
+        {% for d in doctors %}
+        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 me-1">
+          {{ d.full_name }}
+        </span>
+        {% endfor %}
+      {% else %}
+        <span class="text-muted small">None assigned</span>
+      {% endif %}
+      {% if case.description %}
+      <h6 class="fw-semibold mt-3 mb-2 text-muted small text-uppercase">Description</h6>
+      <p class="small text-dark mb-0">{{ case.description }}</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="table-card">
+  <ul class="nav nav-tabs px-3 pt-3" id="caseTabs">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabPM">Postmortem ({{ postmortems|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabEv">Evidence ({{ evidence|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabLab">Lab Tests ({{ lab_tests|length }})</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabRpt">Court Reports ({{ reports|length }})</a></li>
+  </ul>
+  <div class="tab-content p-3">
+
+    <div class="tab-pane fade show active" id="tabPM">
+      {% if current_user.role == 'Hospital Management' %}
+      <a href="{{ url_for('postmortem.add_pm') }}" class="btn btn-sm btn-outline-primary mb-2">+ Add Postmortem</a>
+      {% endif %}
+      {% for pm in postmortems %}
+      <div class="border rounded p-3 mb-2">
+        <div class="d-flex justify-content-between">
+          <strong>{{ pm.exam_date or 'Date not set' }}</strong>
+          <span class="badge bg-secondary">{{ pm.manner_of_death or '—' }}</span>
+        </div>
+        <div class="small mt-1"><span class="text-muted">Doctor:</span> {{ pm.doctor_name or '—' }}</div>
+        <div class="small"><span class="text-muted">Cause of Death:</span> {{ pm.cause_of_death or '—' }}</div>
+        <div class="small"><span class="text-muted">Findings:</span> {{ pm.findings or '—' }}</div>
+      </div>
+      {% else %}<p class="text-muted small py-2">No postmortem records.</p>{% endfor %}
+    </div>
+
+    <div class="tab-pane fade" id="tabEv">
+      {% if current_user.role == 'Hospital Management' %}
+      <a href="{{ url_for('evidence.add_evidence') }}" class="btn btn-sm btn-outline-primary mb-2">+ Add Evidence</a>
+      {% endif %}
+      <table class="table table-sm">
+        <thead><tr><th>Type</th><th>Description</th><th>Collected By</th><th>Date</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for ev in evidence %}
+          <tr>
+            <td>{{ ev.evidence_type }}</td>
+            <td>{{ ev.description or '—' }}</td>
+            <td>{{ ev.collected_by or '—' }}</td>
+            <td>{{ ev.collected_date or '—' }}</td>
+            <td><span class="badge bg-secondary">{{ ev.status }}</span></td>
+          </tr>
+          {% else %}<tr><td colspan="5" class="text-muted">No evidence.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-pane fade" id="tabLab">
+      {% if current_user.role == 'Hospital Management' %}
+      <a href="{{ url_for('lab.add_test') }}" class="btn btn-sm btn-outline-primary mb-2">+ Add Lab Test</a>
+      {% endif %}
+      <table class="table table-sm">
+        <thead><tr><th>Test Type</th><th>Requested By</th><th>Date</th><th>Result</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for lt in lab_tests %}
+          <tr>
+            <td>{{ lt.test_type }}</td>
+            <td>{{ lt.requested_by_name or '—' }}</td>
+            <td>{{ lt.test_date or '—' }}</td>
+            <td>{{ lt.result or '—' }}</td>
+            <td>
+              <span class="badge {{ 'bg-success' if lt.status == 'Completed' else ('bg-danger' if lt.status == 'Failed' else 'bg-warning text-dark') }}">
+                {{ lt.status }}
+              </span>
+            </td>
+          </tr>
+          {% else %}<tr><td colspan="5" class="text-muted">No lab tests.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tab-pane fade" id="tabRpt">
+      {% if current_user.role == 'Hospital Management' %}
+      <a href="{{ url_for('reports.add_report') }}" class="btn btn-sm btn-outline-primary mb-2">+ New Report</a>
+      {% endif %}
+      {% for r in reports %}
+      <div class="border rounded p-3 mb-2 d-flex justify-content-between align-items-start">
+        <div>
+          <strong>{{ r.report_type or 'Report' }}</strong>
+          <div class="small text-muted">{{ r.court_name or '—' }} &bull; {{ r.submission_date or 'Not submitted' }}</div>
+          <div class="small text-muted">Doctor: {{ r.doctor_name or '—' }}</div>
+        </div>
+        <div class="d-flex gap-2 align-items-center">
+          <span class="badge rounded-pill
+            {% if r.status == 'Draft' %}badge-draft
+            {% elif r.status == 'Submitted' %}badge-submitted
+            {% elif r.status == 'Accepted' %}badge-accepted
+            {% else %}badge-rejected{% endif %}">{{ r.status }}</span>
+          <a href="{{ url_for('reports.view_report', rid=r.report_id) }}" class="btn btn-sm btn-outline-info">View</a>
+        </div>
+      </div>
+      {% else %}<p class="text-muted small py-2">No court reports.</p>{% endfor %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}
