@@ -1,36 +1,32 @@
 {% extends 'base.html' %}
-{% block title %}Lab Tests — Forensic MIS{% endblock %}
-{% block page_title %}Laboratory Tests{% endblock %}
+{% block title %}Lab Requests — Forensic MIS{% endblock %}
+{% block page_title %}Laboratory Requests{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">Lab Tests</h5>
-  {% if current_user.role == 'Hospital Management' %}
-  <a href="{{ url_for('lab.add_test') }}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg me-1"></i> Add Test
-  </a>
+  <h5 class="fw-bold mb-0">Laboratory Requests</h5>
+  {% if current_user.role in ('Administrator','Senior JMO','JMO','Lab Technician') %}
+  <a href="{{ url_for('lab.add_request') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> New Lab Request</a>
   {% endif %}
 </div>
 
 <div class="filter-bar">
   <form method="GET" class="row g-2 align-items-end">
-    <div class="col-md-5">
+    <div class="col-md-4">
       <label class="form-label small fw-semibold mb-1">Search</label>
-      <input name="search" class="form-control form-control-sm"
-             placeholder="Test type, Case No." value="{{ search }}">
+      <input name="search" class="form-control form-control-sm" placeholder="Case No., lab, test" value="{{ search }}">
     </div>
     <div class="col-md-3">
-      <label class="form-label small fw-semibold mb-1">Status</label>
+      <label class="form-label small fw-semibold mb-1">Result Status</label>
       <select name="status" class="form-select form-select-sm">
         <option value="">All</option>
-        {% for s in lab_statuses %}
-        <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>
-        {% endfor %}
+        <option value="pending" {{ 'selected' if status=='pending' }}>Pending</option>
+        <option value="completed" {{ 'selected' if status=='completed' }}>Completed</option>
       </select>
     </div>
     <div class="col-auto d-flex gap-1">
       <button type="submit" class="btn btn-primary btn-sm">Filter</button>
-      <a href="{{ url_for('lab.list_tests') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+      <a href="{{ url_for('lab.list_requests') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
     </div>
   </form>
 </div>
@@ -38,44 +34,27 @@
 <div class="table-card">
   <div class="table-responsive">
     <table class="table mb-0">
-      <thead>
-        <tr>
-          <th>Case No.</th><th>Test Type</th><th>Requested By</th>
-          <th>Test Date</th><th>Result</th><th>Status</th><th>Actions</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Case No.</th><th>Lab</th><th>Specimen</th><th>Urgency</th><th>Date Sent</th><th>Status</th><th></th></tr></thead>
       <tbody>
-        {% for r in records %}
+        {% for r in requests %}
         <tr>
           <td><code>{{ r.case_number }}</code></td>
-          <td>{{ r.test_type }}</td>
-          <td>{{ r.requested_by_name or '—' }}</td>
-          <td>{{ r.test_date or '—' }}</td>
-          <td>{{ r.result or '—' }}</td>
+          <td>{{ r.lab_name }}</td>
+          <td>{{ r.specimen_type }} {{ '(' + r.specimen_label + ')' if r.specimen_label else '' }}</td>
+          <td><span class="badge {{ 'badge-rejected' if r.urgency=='Urgent' else 'badge-open' }}">{{ r.urgency or '—' }}</span></td>
+          <td>{{ r.date_sent.strftime('%Y-%m-%d') if r.date_sent else '—' }}</td>
           <td>
-            <span class="badge {{ 'bg-success' if r.status == 'Completed' else ('bg-danger' if r.status == 'Failed' else 'bg-warning text-dark') }}">
-              {{ r.status }}
-            </span>
+            {% if r.lab_result_id %}<span class="badge badge-closed">Completed</span>
+            {% else %}<span class="badge badge-inprog">Pending</span>{% endif %}
           </td>
-          <td>
-            {% if current_user.role == 'Hospital Management' %}
-            <a href="{{ url_for('lab.edit_test', tid=r.test_id) }}"
-               class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            {% if current_user.role == 'Hospital Management' %}
-            <form method="POST" action="{{ url_for('lab.delete_test', tid=r.test_id) }}"
-                  class="d-inline" onsubmit="return confirm('Delete this test?')">
-              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-            </form>
-            {% endif %}
-          </td>
+          <td><a href="{{ url_for('lab.view_request', rid=r.lab_request_id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-center text-muted py-5">No lab tests found.</td></tr>
+        <tr><td colspan="7" class="text-center text-muted py-5">No lab requests found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  <div class="p-3 text-muted small border-top">Showing {{ records|length }} record(s)</div>
+  <div class="p-3 text-muted small border-top">Showing {{ requests|length }} record(s)</div>
 </div>
 {% endblock %}

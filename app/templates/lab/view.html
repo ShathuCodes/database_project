@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% block title %}Lab Request — {{ record.case_number }}{% endblock %}
+{% block page_title %}Lab Request — {{ record.lab_name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">Lab Request for <code>{{ record.case_number }}</code></h5>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('cases.view_case', cid=record.case_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-folder2-open me-1"></i>View Case</a>
+    {% if current_user.role in ('Administrator','Senior JMO','JMO','Lab Technician') %}
+    <a href="{{ url_for('lab.add_result', rid=record.lab_request_id) }}" class="btn btn-primary btn-sm"><i class="bi bi-clipboard2-check me-1"></i>{{ 'Edit' if result else 'Enter' }} Result</a>
+    <form method="POST" action="{{ url_for('lab.delete_request', rid=record.lab_request_id) }}" class="d-inline" onsubmit="return confirm('Delete this lab request?')">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="row g-3">
+    <div class="col-md-3"><div class="text-muted small">Laboratory</div><div class="fw-semibold">{{ record.lab_name }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Specimen</div><div class="fw-semibold">{{ record.specimen_type }} {{ '(' + record.specimen_label + ')' if record.specimen_label else '' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Urgency / Purpose</div><div class="fw-semibold">{{ record.urgency }} / {{ record.request_purpose }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Requested By</div><div class="fw-semibold">{{ record.requested_by_name }}</div></div>
+    <div class="col-md-12"><div class="text-muted small">Test(s) Requested</div><div>{{ record.test_requested or '—' }}</div></div>
+    <div class="col-md-6"><div class="text-muted small">Poisons Suspected</div><div>{{ record.poisons_suspected or '—' }}</div></div>
+    <div class="col-md-6"><div class="text-muted small">Special Procedure Request</div><div>{{ record.special_procedure_request or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Date Sent</div><div class="fw-semibold">{{ record.date_sent.strftime('%Y-%m-%d %H:%M') if record.date_sent else '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Date Accepted</div><div class="fw-semibold">{{ record.date_accepted.strftime('%Y-%m-%d %H:%M') if record.date_accepted else '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Receiving Ref. No.</div><div class="fw-semibold">{{ record.receiving_refno or '—' }}</div></div>
+  </div>
+</div>
+
+{% if organ_tissue %}
+<div class="table-card mb-4">
+  <div class="p-3 pb-0"><h6 class="fw-bold mb-0">Organs / Tissues Submitted</h6></div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Organ</th><th>No. of Tissue</th></tr></thead>
+      <tbody>
+        {% for ot in organ_tissue %}
+        <tr><td>{{ ot.organ_name }}</td><td>{{ ot.no_of_tissue if ot.no_of_tissue is not none else '—' }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<div class="section-card">
+  <h6 class="fw-bold mb-3">Result</h6>
+  {% if result %}
+  <div class="row g-3">
+    <div class="col-md-4"><div class="text-muted small">Laboratory No.</div><div class="fw-semibold">{{ result.laboratory_no or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Result Date</div><div class="fw-semibold">{{ result.result_date.strftime('%Y-%m-%d') if result.result_date else '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Received By</div><div class="fw-semibold">{{ result.received_by or '—' }}</div></div>
+    <div class="col-md-12"><div class="text-muted small">Lab Notes</div><div>{{ result.lab_notes or '—' }}</div></div>
+    <div class="col-md-12"><div class="text-muted small">Findings</div><div>{{ result.findings or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Reported By</div><div class="fw-semibold">{{ result.reported_by or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Checked By</div><div class="fw-semibold">{{ result.checked_by or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Sent On</div><div class="fw-semibold">{{ result.sent_on_date.strftime('%Y-%m-%d') if result.sent_on_date else '—' }}</div></div>
+  </div>
+  {% else %}
+  <p class="text-muted mb-0">Result not yet received. <a href="{{ url_for('lab.add_result', rid=record.lab_request_id) }}">Enter result</a>.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,31 +1,33 @@
 {% extends 'base.html' %}
-{% block title %}Court Reports — Forensic MIS{% endblock %}
-{% block page_title %}Court Reports{% endblock %}
+{% block title %}Reports — Forensic MIS{% endblock %}
+{% block page_title %}Medico-Legal Reports{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">Court Reports</h5>
-  {% if current_user.role == 'Hospital Management' %}
-  <a href="{{ url_for('reports.add_report') }}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg me-1"></i> New Report
-  </a>
+  <h5 class="fw-bold mb-0">Reports</h5>
+  {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+  <a href="{{ url_for('reports.add_report') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> New Report</a>
   {% endif %}
 </div>
 
 <div class="filter-bar">
   <form method="GET" class="row g-2 align-items-end">
-    <div class="col-md-5">
+    <div class="col-md-4">
       <label class="form-label small fw-semibold mb-1">Search</label>
-      <input name="search" class="form-control form-control-sm"
-             placeholder="Case No., Court Name" value="{{ search }}">
+      <input name="search" class="form-control form-control-sm" placeholder="Case No. or serial no." value="{{ search }}">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold mb-1">Report Type</label>
+      <select name="report_type" class="form-select form-select-sm">
+        <option value="">All</option>
+        {% for t in report_types %}<option value="{{ t }}" {{ 'selected' if report_type==t }}>{{ t }}</option>{% endfor %}
+      </select>
     </div>
     <div class="col-md-3">
       <label class="form-label small fw-semibold mb-1">Status</label>
       <select name="status" class="form-select form-select-sm">
         <option value="">All</option>
-        {% for s in rpt_statuses %}
-        <option value="{{ s }}" {{ 'selected' if status == s }}>{{ s }}</option>
-        {% endfor %}
+        {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if status==s }}>{{ s }}</option>{% endfor %}
       </select>
     </div>
     <div class="col-auto d-flex gap-1">
@@ -38,39 +40,24 @@
 <div class="table-card">
   <div class="table-responsive">
     <table class="table mb-0">
-      <thead>
-        <tr>
-          <th>Case No.</th><th>Type</th><th>Court</th>
-          <th>Doctor</th><th>Submitted</th><th>Status</th><th>Actions</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Serial No.</th><th>Case No.</th><th>Type</th><th>Prepared By</th><th>Date Issued</th><th>Status</th><th>Actions</th></tr></thead>
       <tbody>
-        {% for r in records %}
+        {% for r in reports %}
         <tr>
+          <td>{{ r.serial_no or '—' }}</td>
           <td><code>{{ r.case_number }}</code></td>
-          <td>{{ r.report_type or '—' }}</td>
-          <td>{{ r.court_name or '—' }}</td>
-          <td>{{ r.doctor_name or '—' }}</td>
-          <td>{{ r.submission_date or '—' }}</td>
+          <td>{{ r.report_type }}</td>
+          <td>{{ r.prepared_by_name }}</td>
+          <td>{{ r.date_issued.strftime('%Y-%m-%d') if r.date_issued else '—' }}</td>
           <td>
-            <span class="badge rounded-pill
-              {% if r.status == 'Draft' %}badge-draft
-              {% elif r.status == 'Submitted' %}badge-submitted
-              {% elif r.status == 'Accepted' %}badge-accepted
-              {% else %}badge-rejected{% endif %}">
-              {{ r.status }}
-            </span>
+            {% if r.status == 'Draft' %}<span class="badge badge-draft">Draft</span>
+            {% elif r.status == 'Signed' %}<span class="badge badge-submitted">Signed</span>
+            {% else %}<span class="badge badge-closed">Despatched</span>{% endif %}
           </td>
           <td>
-            <a href="{{ url_for('reports.view_report', rid=r.report_id) }}"
-               class="btn btn-sm btn-outline-info me-1"><i class="bi bi-eye"></i></a>
-            {% if current_user.role == 'Hospital Management' %}
-            <a href="{{ url_for('reports.edit_report', rid=r.report_id) }}"
-               class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            {% if current_user.role == 'Hospital Management' %}
-            <form method="POST" action="{{ url_for('reports.delete_report', rid=r.report_id) }}"
-                  class="d-inline" onsubmit="return confirm('Delete this report?')">
+            {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+            <a href="{{ url_for('reports.edit_report', rid=r.report_id) }}" class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
+            <form method="POST" action="{{ url_for('reports.delete_report', rid=r.report_id) }}" class="d-inline" onsubmit="return confirm('Delete this report?')">
               <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
             {% endif %}
@@ -82,6 +69,6 @@
       </tbody>
     </table>
   </div>
-  <div class="p-3 text-muted small border-top">Showing {{ records|length }} record(s)</div>
+  <div class="p-3 text-muted small border-top">Showing {{ reports|length }} record(s)</div>
 </div>
 {% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Clinical Examinations — Forensic MIS{% endblock %}
+{% block page_title %}Clinical Examinations{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">Clinical Examinations</h5>
+  {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+  <a href="{{ url_for('clinical.add_clinical') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> New Clinical Exam</a>
+  {% endif %}
+</div>
+
+<div class="filter-bar">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label small fw-semibold mb-1">Search</label>
+      <input name="search" class="form-control form-control-sm" placeholder="Case No. or reason for referral" value="{{ search }}">
+    </div>
+    <div class="col-auto d-flex gap-1">
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      <a href="{{ url_for('clinical.list_clinical') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Case No.</th><th>Date</th><th>Reason for Referral</th><th>Examined By</th><th></th></tr></thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td><code>{{ r.case_number }}</code></td>
+          <td>{{ r.event_date.strftime('%Y-%m-%d') if r.event_date else '—' }}</td>
+          <td>{{ (r.reason_for_referral or '—')[:60] }}</td>
+          <td>{{ r.staff_name }}</td>
+          <td><a href="{{ url_for('clinical.view_clinical', eid=r.event_id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-5">No clinical examinations found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-3 text-muted small border-top">Showing {{ records|length }} record(s)</div>
+</div>
+{% endblock %}

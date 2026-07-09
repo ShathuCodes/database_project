@@ -1,85 +1,100 @@
 {% extends 'base.html' %}
-{% block title %}{{ action }} Lab Test — Forensic MIS{% endblock %}
-{% block page_title %}{{ action }} Lab Test{% endblock %}
+{% block title %}{{ action }} Lab Request — Forensic MIS{% endblock %}
+{% block page_title %}{{ action }} Lab Request{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">{{ action }} Lab Test</h5>
-  <a href="{{ url_for('lab.list_tests') }}" class="btn btn-sm btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i>Back
-  </a>
-</div>
-
-<div class="table-card p-4" style="max-width:720px">
+<div class="section-card" style="max-width:920px;">
   <form method="POST">
     <div class="row g-3">
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Case <span class="text-danger">*</span></label>
-        <select name="case_id" class="form-select" required>
-          <option value="">— Select Case —</option>
-          {% for c in cases %}
-          <option value="{{ c.case_id }}"
-            {{ 'selected' if record and record.case_id == c.case_id }}>{{ c.case_number }}</option>
+        <label class="form-label small fw-semibold">Specimen *</label>
+        <select name="specimen_id" class="form-select" required>
+          {% for sp in specimens %}
+          <option value="{{ sp.specimen_id }}">{{ sp.case_number }} — {{ sp.specimen_type }} {{ '(' + sp.specimen_label + ')' if sp.specimen_label else '' }}</option>
           {% endfor %}
         </select>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Evidence (optional)</label>
-        <select name="evidence_id" class="form-select">
-          <option value="">— None —</option>
-          {% for ev in evidence %}
-          <option value="{{ ev.evidence_id }}"
-            {{ 'selected' if record and record.evidence_id == ev.evidence_id }}>
-            [Case {{ ev.case_id }}] {{ ev.evidence_type }}
-          </option>
-          {% endfor %}
+        <label class="form-label small fw-semibold">Laboratory *</label>
+        <select name="lab_name" class="form-select" required>
+          {% for l in lab_names %}<option value="{{ l }}">{{ l }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Test Type <span class="text-danger">*</span></label>
-        <input type="text" name="test_type" class="form-control" required
-               value="{{ record.test_type if record else '' }}">
-      </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Status</label>
-        <select name="status" class="form-select">
-          {% for s in lab_statuses %}
-          <option value="{{ s }}"
-            {{ 'selected' if record and record.status == s or (not record and s == 'Pending') }}>{{ s }}</option>
-          {% endfor %}
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Requested By *</label>
+        <select name="requested_by_staff_id" class="form-select" required>
+          {% for s in staff %}<option value="{{ s.staff_id }}">{{ s.full_name }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Requested By</label>
-        <select name="requested_by" class="form-select">
-          <option value="">— Select Staff —</option>
-          {% for s in staff %}
-          <option value="{{ s.staff_id }}"
-            {{ 'selected' if record and record.requested_by == s.staff_id }}>{{ s.full_name }}</option>
-          {% endfor %}
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Date Sent</label>
+        <input type="datetime-local" name="date_sent" class="form-control">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Urgency</label>
+        <select name="urgency" class="form-select">
+          {% for u in urgency_opts %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Tested By</label>
-        <input type="text" name="tested_by" class="form-control"
-               value="{{ record.tested_by if record else '' }}">
+      <div class="col-md-2">
+        <label class="form-label small fw-semibold">Purpose</label>
+        <select name="request_purpose" class="form-select">
+          {% for p in purpose_opts %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label small fw-semibold">Test(s) Requested</label>
+        <textarea name="test_requested" class="form-control" rows="2"></textarea>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Test Date</label>
-        <input type="date" name="test_date" class="form-control"
-               value="{{ record.test_date if record else '' }}">
+        <label class="form-label small fw-semibold">Poisons Suspected</label>
+        <input type="text" name="poisons_suspected" class="form-control">
       </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Result</label>
-        <textarea name="result" class="form-control" rows="3">{{ record.result if record else '' }}</textarea>
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold">Special Procedure Request</label>
+        <input type="text" name="special_procedure_request" class="form-control">
       </div>
-      <div class="col-12 d-flex gap-2 pt-2">
-        <button type="submit" class="btn btn-primary">
-          <i class="bi bi-check-lg me-1"></i>{{ action }} Test
-        </button>
-        <a href="{{ url_for('lab.list_tests') }}" class="btn btn-outline-secondary">Cancel</a>
+      <div class="col-md-12">
+        <label class="form-label small fw-semibold">Macroscopic Appearances</label>
+        <textarea name="macroscopic_appearances" class="form-control" rows="2"></textarea>
       </div>
+    </div>
+
+    <h6 class="fw-bold mt-4 mb-2">Organs / Tissues Submitted <span class="text-muted small">(for histopathology-type requests)</span></h6>
+    <div id="organ-rows">
+      <div class="row g-2 mb-2">
+        <div class="col-md-7"><input type="text" name="organ_name[]" class="form-control form-control-sm" placeholder="Organ name"></div>
+        <div class="col-md-4"><input type="number" name="no_of_tissue[]" class="form-control form-control-sm" placeholder="No. of tissue blocks"></div>
+      </div>
+    </div>
+    <button type="button" class="btn btn-sm btn-outline-secondary mb-3" onclick="addOrganRow()">+ Add Organ/Tissue Row</button>
+
+    <h6 class="fw-bold mt-2 mb-2">Receiving Details <span class="text-muted small">(fill when the lab acknowledges receipt)</span></h6>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label small fw-semibold">Date Accepted</label>
+        <input type="datetime-local" name="date_accepted" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Accepted By</label>
+        <input type="text" name="accepted_by_name" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Receiving Ref. No.</label>
+        <input type="text" name="receiving_refno" class="form-control"></div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Lab Request</button>
+      <a href="{{ url_for('lab.list_requests') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>
+
+<script>
+function addOrganRow() {
+  const row = document.createElement('div');
+  row.className = 'row g-2 mb-2';
+  row.innerHTML = `
+    <div class="col-md-7"><input type="text" name="organ_name[]" class="form-control form-control-sm" placeholder="Organ name"></div>
+    <div class="col-md-4"><input type="number" name="no_of_tissue[]" class="form-control form-control-sm" placeholder="No. of tissue blocks"></div>`;
+  document.getElementById('organ-rows').appendChild(row);
+}
+</script>
 {% endblock %}

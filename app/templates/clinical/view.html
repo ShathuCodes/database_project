@@ -1,0 +1,100 @@
+{% extends 'base.html' %}
+{% block title %}Clinical Exam — {{ record.case_number }}{% endblock %}
+{% block page_title %}Clinical Examination — {{ record.case_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">Clinical Examination for <code>{{ record.case_number }}</code></h5>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('cases.view_case', cid=record.case_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-folder2-open me-1"></i>View Case</a>
+    {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+    <form method="POST" action="{{ url_for('clinical.delete_clinical', eid=record.event_id) }}" class="d-inline" onsubmit="return confirm('Delete this record?')">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="row g-3">
+    <div class="col-md-3"><div class="text-muted small">Place of Exam</div><div class="fw-semibold">{{ record.place_of_exam or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Hospital No.</div><div class="fw-semibold">{{ record.hospital_no or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Ward / Bed</div><div class="fw-semibold">{{ record.ward or '—' }} / {{ record.bed_no or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Consent Obtained</div><div class="fw-semibold">{{ 'Yes' if record.consent_obtained else 'No' }}</div></div>
+    <div class="col-md-6"><div class="text-muted small">Reason for Referral</div><div>{{ record.reason_for_referral or '—' }}</div></div>
+    <div class="col-md-6"><div class="text-muted small">History Given</div><div>{{ record.history_given or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Alcohol</div><div class="fw-semibold">{{ record.under_influence_alcohol or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Drugs Consumed</div><div class="fw-semibold">{{ record.drugs_consumed or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Under Influence of Drugs</div><div class="fw-semibold">{{ record.under_influence_drugs or '—' }}</div></div>
+    <div class="col-md-12"><div class="text-muted small">Other Opinions</div><div>{{ record.other_opinions or '—' }}</div></div>
+  </div>
+</div>
+
+{% if saf %}
+<div class="section-card">
+  <h6 class="fw-bold mb-3">Sexual Assault Findings</h6>
+  <div class="row g-3">
+    <div class="col-md-12"><div class="text-muted small">History of Assault Given</div><div>{{ saf.history_of_assault_given or '—' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Vaginal/Hymen Signs</div><div class="fw-semibold">{{ 'Yes' if saf.vaginal_hymen_signs_present else 'No' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Anal Penetration Signs</div><div class="fw-semibold">{{ 'Yes' if saf.anal_penetration_signs_present else 'No' }}</div></div>
+    <div class="col-md-4"><div class="text-muted small">Inter-labial Penetration Signs</div><div class="fw-semibold">{{ 'Yes' if saf.inter_labial_penetration_signs_present else 'No' }}</div></div>
+    <div class="col-md-12"><div class="text-muted small">Remarks</div><div>{{ saf.remarks or '—' }}</div></div>
+  </div>
+</div>
+{% endif %}
+
+<div class="table-card mt-4">
+  <div class="p-3 pb-0"><h6 class="fw-bold mb-0">Injuries</h6></div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Nature</th><th>Site</th><th>Weapon</th><th>Category</th><th>Grievous Clause</th></tr></thead>
+      <tbody>
+        {% for inj in injuries %}
+        <tr>
+          <td>{{ inj.nature or '—' }}</td><td>{{ inj.site or '—' }}</td><td>{{ inj.causative_weapon or '—' }}</td>
+          <td>{{ inj.category_of_hurt or '—' }}</td>
+          <td>{{ (inj.grievous_hurt_clause_code + ' — ' + inj.clause_description) if inj.grievous_hurt_clause_code else '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-center text-muted py-3">No injuries recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+  <form method="POST" action="{{ url_for('clinical.add_injury', eid=record.event_id) }}" class="p-3 border-top row g-2">
+    <div class="col-md-2"><input name="nature" class="form-control form-control-sm" placeholder="Nature"></div>
+    <div class="col-md-2"><input name="site" class="form-control form-control-sm" placeholder="Site"></div>
+    <div class="col-md-2"><input name="causative_weapon" class="form-control form-control-sm" placeholder="Weapon"></div>
+    <div class="col-md-2">
+      <select name="category_of_hurt" class="form-select form-select-sm">
+        <option value="">Category</option><option>Non-grievous</option><option>Grievous</option><option>Fatal in ordinary course of nature</option>
+      </select>
+    </div>
+    <div class="col-md-2">
+      <select name="grievous_hurt_clause_code" class="form-select form-select-sm">
+        <option value="">Clause (if grievous)</option>
+        {% for c in clause_types %}<option value="{{ c.clause_code }}">({{ c.clause_code }}) {{ c.description[:30] }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-sm btn-primary w-100">Add</button></div>
+  </form>
+  {% endif %}
+</div>
+
+<div class="table-card mt-4">
+  <div class="p-3 pb-0"><h6 class="fw-bold mb-0">Specimens</h6></div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Type</th><th>Label</th><th>Custody Status</th></tr></thead>
+      <tbody>
+        {% for sp in specimens %}
+        <tr><td>{{ sp.specimen_type }}</td><td>{{ sp.specimen_label or '—' }}</td><td>{{ sp.chain_of_custody_status or '—' }}</td></tr>
+        {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-3">No specimens linked yet. <a href="{{ url_for('evidence.add_evidence') }}">Add a specimen</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

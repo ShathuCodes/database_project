@@ -1,102 +1,113 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
-from app.helpers import roles_required
+from app.helpers import roles_required, ALL_ROLES, CLINICAL
 from app import database
 
 reports_bp = Blueprint('reports', __name__)
 
-RPT_STATUSES = ['Draft','Submitted','Accepted','Rejected']
+REPORT_TYPES = ['MLR', 'PMR', 'Court Report']
+STATUSES = ['Draft', 'Signed', 'Despatched']
 
 
 @reports_bp.route('/')
 @login_required
+@roles_required(*ALL_ROLES)
 def list_reports():
-    search = request.args.get('search','').strip()
-    status = request.args.get('status','')
-    sql = """SELECT cr.*, fc.case_number, s.full_name AS doctor_name
-             FROM court_report cr
-             JOIN forensic_case fc ON fc.case_id=cr.case_id
-             LEFT JOIN staff s ON s.staff_id=cr.doctor_id WHERE 1=1"""
-    params=[]
+    search       = request.args.get('search', '').strip()
+    report_type  = request.args.get('report_type', '')
+    status       = request.args.get('status', '')
+
+    sql = """SELECT r.*, cm.case_number, s.full_name AS prepared_by_name
+             FROM report r
+             JOIN case_master cm ON cm.case_id = r.case_id
+             JOIN staff s ON s.staff_id = r.prepared_by_staff_id
+             WHERE 1=1"""
+    params = []
     if search:
-        sql += " AND (fc.case_number ILIKE %s OR cr.court_name ILIKE %s)"
-        params.extend([f'%{search}%']*2)
+        sql += " AND (cm.case_number ILIKE %s OR r.serial_no ILIKE %s)"
+        params.extend([f'%{search}%'] * 2)
+    if report_type:
+        sql += " AND r.report_type = %s"
+        params.append(report_type)
     if status:
-        sql += " AND cr.status=%s"
+        sql += " AND r.status = %s"
         params.append(status)
-    sql += " ORDER BY cr.created_at DESC"
-    records = database.fetchall(sql,params)
-    return render_template('reports/list.html', records=records,
-                           rpt_statuses=RPT_STATUSES, search=search, status=status)
+    sql += " ORDER BY r.date_issued DESC NULLS LAST"
+    reports = database.fetchall(sql, params)
+    return render_template('reports/list.html', reports=reports, report_types=REPORT_TYPES,
+                           statuses=STATUSES, search=search, report_type=report_type, status=status)
 
 
-@reports_bp.route('/<int:rid>')
+@reports_bp.route('/add', methods=['GET', 'POST'])
 @login_required
-def view_report(rid):
-    report = database.fetchone(
-        """SELECT cr.*, fc.case_number, fc.case_type, p.full_name AS patient_name,
-                  s.full_name AS doctor_name
-           FROM court_report cr
-           JOIN forensic_case fc ON fc.case_id=cr.case_id
-           LEFT JOIN patient p ON p.patient_id=fc.patient_id
-           LEFT JOIN staff s ON s.staff_id=cr.doctor_id
-           WHERE cr.report_id=%s""", (rid,)
-    )
-    return render_template('reports/view.html', report=report)
-
-
-@reports_bp.route('/add', methods=['GET','POST'])
-@login_required
-@roles_required('Hospital Management')
+@roles_required(*CLINICAL)
 def add_report():
-    cases   = database.fetchall("SELECT case_id, case_number FROM forensic_case ORDER BY case_id DESC")
-    doctors = database.fetchall("SELECT staff_id, full_name FROM staff WHERE role IN ('Doctor','JMO')")
+    cases = database.fetchall("SELECT case_id, case_number FROM case_master ORDER BY case_id DESC")
+    staff = database.fetchall("SELECT staff_id, full_name FROM staff ORDER BY full_name")
+    events = database.fetchall(
+        """SELECT ce.event_id, ce.event_type, ce.case_id, cm.case_number
+           FROM case_event ce JOIN case_master cm ON cm.case_id = ce.case_id
+           ORDER BY ce.event_id DESC""")
+
     if request.method == 'POST':
         f = request.form
         new = database.execute(
-            """INSERT INTO court_report
-               (case_id, doctor_id, report_type, content, submission_date, court_name, status)
-               VALUES (%s,%s,%s,%s,%s,%s,%s) RETURNING report_id""",
-            (f['case_id'], f.get('doctor_id') or None, f.get('report_type'),
-             f.get('content'), f.get('submission_date') or None,
-             f.get('court_name'), f.get('status','Draft')),
+            """INSERT INTO report (serial_no, case_id, event_id, report_type,
+               prepared_by_staff_id, date_issued, date_despatched, status, file_path)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s) RETURNING report_id""",
+            (f.get('serial_no'), f['case_id'], f.get('event_id') or None, f['report_type'],
+             f['prepared_by_staff_id'], f.get('date_issued') or None,
+             f.get('date_despatched') or None, f.get('status', 'Draft'), f.get('file_path')),
             returning=True
         )
-        database.log_action(current_user.id,'INSERT','court_report',new['report_id'])
-        flash('Court report created.','success')
-        return redirect(url_for('reports.view_report', rid=new['report_id']))
-    return render_template('reports/form.html', report=None, action='Add',
-                           cases=cases, doctors=doctors, rpt_statuses=RPT_STATUSES)
+        database.log_action(current_user.id, 'INSERT', 'report', new['report_id'], None, 'Report created')
+        flash('Report created.', 'success')
+        return redirect(url_for('reports.list_reports'))
+
+    return render_template('reports/form.html', record=None, action='Add', cases=cases, staff=staff,
+                           events=events, report_types=REPORT_TYPES, statuses=STATUSES)
 
 
-@reports_bp.route('/<int:rid>/edit', methods=['GET','POST'])
+@reports_bp.route('/<int:rid>/edit', methods=['GET', 'POST'])
 @login_required
-@roles_required('Hospital Management')
+@roles_required(*CLINICAL)
 def edit_report(rid):
-    report  = database.fetchone("SELECT * FROM court_report WHERE report_id=%s",(rid,))
-    cases   = database.fetchall("SELECT case_id, case_number FROM forensic_case ORDER BY case_id DESC")
-    doctors = database.fetchall("SELECT staff_id, full_name FROM staff WHERE role IN ('Doctor','JMO')")
+    record = database.fetchone("SELECT * FROM report WHERE report_id=%s", (rid,))
+    if not record:
+        flash('Report not found.', 'danger')
+        return redirect(url_for('reports.list_reports'))
+    cases = database.fetchall("SELECT case_id, case_number FROM case_master ORDER BY case_id DESC")
+    staff = database.fetchall("SELECT staff_id, full_name FROM staff ORDER BY full_name")
+    events = database.fetchall(
+        """SELECT ce.event_id, ce.event_type, ce.case_id, cm.case_number
+           FROM case_event ce JOIN case_master cm ON cm.case_id = ce.case_id
+           ORDER BY ce.event_id DESC""")
+
     if request.method == 'POST':
         f = request.form
         database.execute(
-            """UPDATE court_report SET case_id=%s, doctor_id=%s, report_type=%s,
-               content=%s, submission_date=%s, court_name=%s, status=%s
+            """UPDATE report SET serial_no=%s, case_id=%s, event_id=%s, report_type=%s,
+               prepared_by_staff_id=%s, date_issued=%s, date_despatched=%s, status=%s, file_path=%s
                WHERE report_id=%s""",
-            (f['case_id'], f.get('doctor_id') or None, f.get('report_type'),
-             f.get('content'), f.get('submission_date') or None,
-             f.get('court_name'), f.get('status'), rid)
+            (f.get('serial_no'), f['case_id'], f.get('event_id') or None, f['report_type'],
+             f['prepared_by_staff_id'], f.get('date_issued') or None,
+             f.get('date_despatched') or None, f.get('status'), f.get('file_path'), rid)
         )
-        database.log_action(current_user.id,'UPDATE','court_report',rid)
-        flash('Report updated.','success')
-        return redirect(url_for('reports.view_report', rid=rid))
-    return render_template('reports/form.html', report=report, action='Edit',
-                           cases=cases, doctors=doctors, rpt_statuses=RPT_STATUSES)
+        if f.get('status') == 'Despatched':
+            database.execute("UPDATE case_master SET status='Despatched' WHERE case_id=%s", (f['case_id'],))
+        database.log_action(current_user.id, 'UPDATE', 'report', rid, None, 'Report updated')
+        flash('Report updated.', 'success')
+        return redirect(url_for('reports.list_reports'))
+
+    return render_template('reports/form.html', record=record, action='Edit', cases=cases, staff=staff,
+                           events=events, report_types=REPORT_TYPES, statuses=STATUSES)
 
 
 @reports_bp.route('/<int:rid>/delete', methods=['POST'])
 @login_required
-@roles_required('Hospital Management')
+@roles_required(*CLINICAL)
 def delete_report(rid):
-    database.execute("DELETE FROM court_report WHERE report_id=%s",(rid,))
-    flash('Report deleted.','warning')
+    database.execute("DELETE FROM report WHERE report_id=%s", (rid,))
+    database.log_action(current_user.id, 'DELETE', 'report', rid, None, 'Report deleted')
+    flash('Report deleted.', 'warning')
     return redirect(url_for('reports.list_reports'))

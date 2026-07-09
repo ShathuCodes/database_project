@@ -21,22 +21,26 @@ def create_app():
         return load_user(user_id)
 
     # ── Register Blueprints ────────────────────────────────────
-    from app.routes.auth      import auth_bp
-    from app.routes.dashboard import dashboard_bp
-    from app.routes.patients  import patients_bp
-    from app.routes.cases     import cases_bp
+    from app.routes.auth       import auth_bp
+    from app.routes.dashboard  import dashboard_bp
+    from app.routes.patients   import patients_bp
+    from app.routes.cases      import cases_bp
     from app.routes.postmortem import postmortem_bp
-    from app.routes.evidence  import evidence_bp
-    from app.routes.lab       import lab_bp
-    from app.routes.reports   import reports_bp
-    from app.routes.staff     import staff_bp
-    from app.routes.users     import users_bp
+    from app.routes.clinical   import clinical_bp
+    from app.routes.skeletal   import skeletal_bp
+    from app.routes.evidence   import evidence_bp
+    from app.routes.lab        import lab_bp
+    from app.routes.reports    import reports_bp
+    from app.routes.staff      import staff_bp
+    from app.routes.users      import users_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(patients_bp,   url_prefix='/patients')
     app.register_blueprint(cases_bp,      url_prefix='/cases')
     app.register_blueprint(postmortem_bp, url_prefix='/postmortem')
+    app.register_blueprint(clinical_bp,   url_prefix='/clinical')
+    app.register_blueprint(skeletal_bp,   url_prefix='/skeletal')
     app.register_blueprint(evidence_bp,   url_prefix='/evidence')
     app.register_blueprint(lab_bp,        url_prefix='/lab')
     app.register_blueprint(reports_bp,    url_prefix='/reports')

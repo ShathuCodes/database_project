@@ -5,13 +5,19 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, login_required, current_user
 from app import database
 from app.models import User
+from app.helpers import ALL_ROLES
 
 auth_bp = Blueprint('auth', __name__)
 
-# Alias for readability
-_db = database
-
-ALLOWED_ROLES = ('Hospital Management', 'Police Management')
+# Designations available for self-registration (maps 1:1 onto a role of the same name,
+# except Clerk/Lab Technician staff use the matching STAFF.designation)
+REGISTER_ROLES = ['JMO', 'Senior JMO', 'Lab Technician', 'Clerk']
+DESIGNATION_FOR_ROLE = {
+    'Senior JMO': 'Senior JMO',
+    'JMO': 'JMO',
+    'Lab Technician': 'Tech Officer',
+    'Clerk': 'Clerk',
+}
 
 
 def _hash_password(password: str) -> str:
@@ -45,21 +51,22 @@ def login():
         password = request.form.get('password', '')
 
         row = database.fetchone(
-            "SELECT * FROM app_user WHERE username = %s AND is_active = TRUE",
+            """SELECT u.*, r.role_name AS role
+               FROM app_user u JOIN role r ON r.role_id = u.role_id
+               WHERE u.username = %s AND u.is_active = TRUE""",
             (username,)
         )
         if row and _verify_password(password, row['password_hash']):
             user = User(row['user_id'], row['username'],
                         row['role'], row['staff_id'], row['is_active'])
             login_user(user)
-            # update last_login
             database.execute(
                 "UPDATE app_user SET last_login = NOW() WHERE user_id = %s",
                 (row['user_id'],)
             )
-            _db.log_action(row['user_id'], 'LOGIN', 'app_user',
-                           row['user_id'], f"User {username} logged in",
-                           request.remote_addr)
+            database.log_action(row['user_id'], 'UPDATE', 'app_user',
+                                 row['user_id'], None, f"User {username} logged in",
+                                 request.remote_addr)
             flash(f'Welcome back, {username}!', 'success')
             return redirect(request.args.get('next') or url_for('dashboard.home'))
         else:
@@ -68,7 +75,7 @@ def login():
     active_tab = request.args.get('tab', 'login')
     if active_tab not in ('login', 'register'):
         active_tab = 'login'
-    return render_template('login.html', active_tab=active_tab)
+    return render_template('login.html', active_tab=active_tab, register_roles=REGISTER_ROLES)
 
 
 @auth_bp.route('/register', methods=['POST'])
@@ -94,7 +101,7 @@ def register():
         flash('Passwords do not match.', 'danger')
         return redirect(url_for('auth.login', tab='register'))
 
-    if role not in ALLOWED_ROLES:
+    if role not in REGISTER_ROLES:
         flash('Invalid role selected.', 'danger')
         return redirect(url_for('auth.login', tab='register'))
 
@@ -103,24 +110,31 @@ def register():
         flash('Username already exists.', 'danger')
         return redirect(url_for('auth.login', tab='register'))
 
+    role_row = database.fetchone("SELECT role_id FROM role WHERE role_name = %s", (role,))
+    if not role_row:
+        flash('Role is not configured. Contact the administrator.', 'danger')
+        return redirect(url_for('auth.login', tab='register'))
+
     hashed = _hash_password(password)
+    designation = DESIGNATION_FOR_ROLE.get(role, 'Clerk')
 
     try:
         staff = database.execute(
-            "INSERT INTO staff (full_name, role) VALUES (%s, %s) RETURNING staff_id",
-            (full_name, role), returning=True
+            "INSERT INTO staff (full_name, designation) VALUES (%s, %s) RETURNING staff_id",
+            (full_name, designation), returning=True
         )
         staff_id = staff['staff_id']
 
         new_user = database.execute(
-            "INSERT INTO app_user (username, password_hash, role, staff_id, is_active) VALUES (%s, %s, %s, %s, TRUE) RETURNING user_id",
-            (username, hashed, role, staff_id), returning=True
+            """INSERT INTO app_user (username, password_hash, role_id, staff_id, is_active)
+               VALUES (%s, %s, %s, %s, TRUE) RETURNING user_id""",
+            (username, hashed, role_row['role_id'], staff_id), returning=True
         )
-        
-        _db.log_action(new_user['user_id'], 'INSERT', 'app_user',
-                       new_user['user_id'], f"New user {username} registered",
-                       request.remote_addr)
-        
+
+        database.log_action(new_user['user_id'], 'INSERT', 'app_user',
+                             new_user['user_id'], None, f"New user {username} registered",
+                             request.remote_addr)
+
         flash('Registration successful! Please sign in.', 'success')
     except Exception as e:
         flash('Registration failed due to a server error.', 'danger')
@@ -129,12 +143,13 @@ def register():
 
     return redirect(url_for('auth.login'))
 
+
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    _db.log_action(current_user.id, 'LOGOUT', 'app_user',
-                   current_user.id, f"User {current_user.username} logged out",
-                   request.remote_addr)
+    database.log_action(current_user.id, 'UPDATE', 'app_user',
+                         current_user.id, None, f"User {current_user.username} logged out",
+                         request.remote_addr)
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('auth.login'))

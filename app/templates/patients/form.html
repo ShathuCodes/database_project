@@ -1,62 +1,58 @@
 {% extends 'base.html' %}
-{% block title %}Patient — Forensic MIS{% endblock %}
+{% block title %}{{ action }} Patient — Forensic MIS{% endblock %}
 {% block page_title %}{{ action }} Patient{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">{{ action }} Patient</h5>
-  <a href="{{ url_for('patients.list_patients') }}" class="btn btn-sm btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i>Back
-  </a>
-</div>
-
-<div class="table-card p-4" style="max-width:680px">
+<div class="section-card" style="max-width:760px;">
   <form method="POST">
     <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Full Name <span class="text-danger">*</span></label>
-        <input type="text" name="full_name" class="form-control"
-               value="{{ patient.full_name if patient else '' }}" required>
+      <div class="col-md-8">
+        <label class="form-label small fw-semibold">Full Name *</label>
+        <input type="text" name="full_name" class="form-control" required
+               value="{{ patient.full_name if patient else '' }}">
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">NIC</label>
-        <input type="text" name="nic" class="form-control"
-               value="{{ patient.nic if patient else '' }}">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">NIC / Passport No.</label>
+        <input type="text" name="nic_passportno" class="form-control"
+               value="{{ patient.nic_passportno if patient else '' }}">
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Date of Birth</label>
+
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Date of Birth</label>
         <input type="date" name="dob" class="form-control"
                value="{{ patient.dob if patient else '' }}">
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Gender</label>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Age</label>
+        <input type="number" name="age" class="form-control" min="0" max="130"
+               value="{{ patient.age if patient and patient.age is not none else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Gender</label>
         <select name="gender" class="form-select">
           <option value="">— Select —</option>
-          {% for g in ['Male','Female','Other'] %}
-          <option value="{{ g }}" {{ 'selected' if patient and patient.gender == g }}>{{ g }}</option>
+          {% for g in genders %}
+          <option value="{{ g }}" {{ 'selected' if patient and patient.gender == g }}>
+            {{ 'Male' if g=='M' else 'Female' if g=='F' else 'Unknown' }}
+          </option>
           {% endfor %}
         </select>
       </div>
+
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Contact</label>
-        <input type="text" name="contact" class="form-control"
-               value="{{ patient.contact if patient else '' }}">
+        <label class="form-label small fw-semibold">Occupation</label>
+        <input type="text" name="occupation" class="form-control"
+               value="{{ patient.occupation if patient else '' }}">
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Hospital No.</label>
-        <input type="text" name="hospital_no" class="form-control"
-               value="{{ patient.hospital_no if patient else '' }}">
-      </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Address</label>
+      <div class="col-md-12">
+        <label class="form-label small fw-semibold">Address</label>
         <textarea name="address" class="form-control" rows="2">{{ patient.address if patient else '' }}</textarea>
       </div>
-      <div class="col-12 d-flex gap-2 pt-2">
-        <button type="submit" class="btn btn-primary">
-          <i class="bi bi-check-lg me-1"></i>{{ action }} Patient
-        </button>
-        <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary">Cancel</a>
-      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Patient</button>
+      <a href="{{ url_for('patients.list_patients') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>

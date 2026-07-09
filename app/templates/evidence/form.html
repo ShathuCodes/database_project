@@ -1,71 +1,52 @@
 {% extends 'base.html' %}
-{% block title %}{{ action }} Evidence — Forensic MIS{% endblock %}
-{% block page_title %}{{ action }} Evidence{% endblock %}
+{% block title %}{{ action }} Specimen — Forensic MIS{% endblock %}
+{% block page_title %}{{ action }} Specimen{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">{{ action }} Evidence</h5>
-  <a href="{{ url_for('evidence.list_evidence') }}" class="btn btn-sm btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i>Back
-  </a>
-</div>
-
-<div class="table-card p-4" style="max-width:720px">
+<div class="section-card" style="max-width:720px;">
   <form method="POST">
     <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Case <span class="text-danger">*</span></label>
-        <select name="case_id" class="form-select" required>
-          <option value="">— Select Case —</option>
-          {% for c in cases %}
-          <option value="{{ c.case_id }}"
-            {{ 'selected' if record and record.case_id == c.case_id }}>{{ c.case_number }}</option>
+      <div class="col-md-12">
+        <label class="form-label small fw-semibold">Medico-Legal Event *</label>
+        <select name="event_id" class="form-select" required>
+          {% for e in events %}
+          <option value="{{ e.event_id }}" {{ 'selected' if record and record.event_id==e.event_id }}>
+            {{ e.case_number }} — {{ e.event_type }}
+          </option>
           {% endfor %}
         </select>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Evidence Type <span class="text-danger">*</span></label>
-        <input type="text" name="evidence_type" class="form-control" required
-               value="{{ record.evidence_type if record else '' }}">
+        <label class="form-label small fw-semibold">Specimen Type *</label>
+        <input type="text" name="specimen_type" class="form-control" required value="{{ record.specimen_type if record else '' }}">
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Status</label>
-        <select name="status" class="form-select">
-          {% for s in ev_statuses %}
-          <option value="{{ s }}"
-            {{ 'selected' if record and record.status == s or (not record and s == 'In Storage') }}>{{ s }}</option>
-          {% endfor %}
-        </select>
+        <label class="form-label small fw-semibold">Specimen Label</label>
+        <input type="text" name="specimen_label" class="form-control" maxlength="10" placeholder="A, B, C..." value="{{ record.specimen_label if record else '' }}">
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Collected Date</label>
-        <input type="date" name="collected_date" class="form-control"
-               value="{{ record.collected_date if record else '' }}">
+        <label class="form-label small fw-semibold">Collection Date/Time</label>
+        <input type="datetime-local" name="collection_date" class="form-control"
+               value="{{ record.collection_date.strftime('%Y-%m-%dT%H:%M') if record and record.collection_date else '' }}">
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Collected By</label>
-        <input type="text" name="collected_by" class="form-control"
-               value="{{ record.collected_by if record else '' }}">
+        <label class="form-label small fw-semibold">Seal No.</label>
+        <input type="text" name="seal_no" class="form-control" value="{{ record.seal_no if record else '' }}">
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Storage Location</label>
-        <input type="text" name="storage_location" class="form-control"
-               value="{{ record.storage_location if record else '' }}">
+        <label class="form-label small fw-semibold">Chain of Custody Status</label>
+        <input type="text" name="chain_of_custody_status" class="form-control"
+               placeholder="e.g. Collected / Sent to Government Analyst" value="{{ record.chain_of_custody_status if record else '' }}">
       </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Description</label>
-        <textarea name="description" class="form-control" rows="2">{{ record.description if record else '' }}</textarea>
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold">Production Number</label>
+        <input type="text" name="production_number" class="form-control" value="{{ record.production_number if record else '' }}">
       </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Chain of Custody</label>
-        <textarea name="chain_of_custody" class="form-control" rows="2">{{ record.chain_of_custody if record else '' }}</textarea>
-      </div>
-      <div class="col-12 d-flex gap-2 pt-2">
-        <button type="submit" class="btn btn-primary">
-          <i class="bi bi-check-lg me-1"></i>{{ action }} Evidence
-        </button>
-        <a href="{{ url_for('evidence.list_evidence') }}" class="btn btn-outline-secondary">Cancel</a>
-      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Specimen</button>
+      <a href="{{ url_for('evidence.list_evidence') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>

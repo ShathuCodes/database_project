@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Skeletal Examination{% endblock %}
+{% block page_title %}{{ action }} Skeletal Examination{% endblock %}
+
+{% block content %}
+<div class="section-card" style="max-width:920px;">
+  <form method="POST">
+    <h6 class="fw-bold mb-3">Event</h6>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Case *</label>
+        <select name="case_id" class="form-select" required>
+          {% for c in cases %}<option value="{{ c.case_id }}">{{ c.case_number }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Examination Date/Time *</label>
+        <input type="datetime-local" name="event_date" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Examined By *</label>
+        <select name="staff_id" class="form-select" required>
+          {% for s in staff %}<option value="{{ s.staff_id }}">{{ s.full_name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <h6 class="fw-bold mt-4 mb-3">Recovery Details</h6>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label small fw-semibold">Specimen No.</label>
+        <input type="text" name="specimen_no" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Seal Status</label>
+        <select name="seal_status" class="form-select">
+          <option value="">— Select —</option>
+          {% for s in seal_statuses %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Supervised By</label>
+        <select name="supervised_by_staff_id" class="form-select">
+          <option value="">— None —</option>
+          {% for s in staff %}<option value="{{ s.staff_id }}">{{ s.full_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Place Found</label>
+        <textarea name="place_found" class="form-control" rows="2"></textarea></div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Wrapping Description</label>
+        <textarea name="wrapping_description" class="form-control" rows="2"></textarea></div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">History</label>
+        <textarea name="history" class="form-control" rows="2"></textarea></div>
+
+      <div class="col-md-3 form-check ms-3">
+        <input class="form-check-input" type="checkbox" name="human_remains_present" id="hrp">
+        <label class="form-check-label small" for="hrp">Human Remains Present</label></div>
+      <div class="col-md-3 form-check">
+        <input class="form-check-input" type="checkbox" name="animal_remains_present" id="arp">
+        <label class="form-check-label small" for="arp">Animal Remains Present</label></div>
+      <div class="col-md-3 form-check">
+        <input class="form-check-input" type="checkbox" name="skeletonized" id="skel">
+        <label class="form-check-label small" for="skel">Skeletonized</label></div>
+      <div class="col-md-3 form-check">
+        <input class="form-check-input" type="checkbox" name="mummified" id="mum">
+        <label class="form-check-label small" for="mum">Mummified</label></div>
+
+      <div class="col-md-6"><label class="form-label small fw-semibold">State of Putrefaction</label>
+        <input type="text" name="state_of_putrefaction" class="form-control"></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Minimum No. of Individuals</label>
+        <input type="number" name="min_no_individuals" class="form-control" min="0"></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Time Since Death</label>
+        <input type="text" name="time_since_death" class="form-control"></div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">MNI Reasons</label>
+        <textarea name="mni_reasons" class="form-control" rows="2"></textarea></div>
+    </div>
+
+    <h6 class="fw-bold mt-4 mb-3">Conclusions</h6>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label small fw-semibold">Gender Conclusion</label>
+        <input type="text" name="gender_conclusion" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Age Conclusion</label>
+        <input type="text" name="age_conclusion" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Stature Estimate</label>
+        <input type="text" name="stature_estimate" class="form-control"></div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Stature Method</label>
+        <input type="text" name="stature_method" class="form-control"></div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Special Techniques Recommended</label>
+        <input type="text" name="special_techniques_recommended" class="form-control"></div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">Cause of Death Opinion</label>
+        <textarea name="cause_of_death_opinion" class="form-control" rows="2"></textarea></div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Skeletal Examination</button>
+      <a href="{{ url_for('skeletal.list_skeletal') }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -16,4 +16,9 @@ def roles_required(*roles):
         return wrapped
     return decorator
 
-ALL_ROLES = ('Hospital Management', 'Police Management')
+
+# Role groups used across the app
+ALL_ROLES     = ('Administrator', 'Senior JMO', 'JMO', 'Lab Technician', 'Clerk')
+CLINICAL      = ('Administrator', 'Senior JMO', 'JMO')
+LAB_ROLES     = ('Administrator', 'Senior JMO', 'JMO', 'Lab Technician')
+ADMIN_ONLY    = ('Administrator',)

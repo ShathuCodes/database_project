@@ -4,17 +4,16 @@
 
 {% block content %}
 
-<!-- ── Stat Cards ─────────────────────────────────────── -->
 <div class="row g-3 mb-4">
-
   {% set cards = [
-    ('Total Cases',    total_cases,    'bi-folder2-open',    '#dbeafe','#1d4ed8'),
-    ('Open Cases',     open_cases,     'bi-clock-history',   '#fef3c7','#92400e'),
-    ('In Progress',    inprog_cases,   'bi-arrow-repeat',    '#ede9fe','#6d28d9'),
-    ('Closed Cases',   closed_cases,   'bi-check-circle',    '#dcfce7','#15803d'),
-    ('Patients',       total_patients, 'bi-people-fill',     '#fce7f3','#9d174d'),
-    ('Pending Labs',   pending_labs,   'bi-eyedropper',      '#ffedd5','#c2410c'),
-    ('Draft Reports',  pending_reports,'bi-file-earmark-text','#f0fdf4','#166534'),
+    ('Total Cases',      total_cases,     'bi-folder2-open',     '#dbeafe','#1d4ed8'),
+    ('Under Examination',under_exam,      'bi-clock-history',    '#fef3c7','#92400e'),
+    ('Awaiting Lab',     awaiting_lab,    'bi-eyedropper',       '#ffedd5','#c2410c'),
+    ('Report Pending',   report_pending,  'bi-arrow-repeat',     '#ede9fe','#6d28d9'),
+    ('Despatched',       despatched,      'bi-check-circle',     '#dcfce7','#15803d'),
+    ('Patients',         total_patients,  'bi-people-fill',      '#fce7f3','#9d174d'),
+    ('Pending Lab Results',pending_labs,  'bi-hourglass-split',  '#fee2e2','#b91c1c'),
+    ('Draft Reports',    draft_reports,   'bi-file-earmark-text','#f0fdf4','#166534'),
   ] %}
 
   {% for label, val, icon, bg, color in cards %}
@@ -33,10 +32,8 @@
     </div>
   </div>
   {% endfor %}
-
 </div>
 
-<!-- ── Charts ─────────────────────────────────────────── -->
 <div class="row g-3 mb-4">
   <div class="col-lg-5">
     <div class="card border-0 shadow-sm h-100" style="border-radius:14px;">
@@ -45,10 +42,7 @@
         {% if by_type %}
           <canvas id="typeChart" height="220"></canvas>
         {% else %}
-          <div class="text-center text-muted py-5">
-            <i class="bi bi-pie-chart fs-1 d-block mb-2 opacity-25"></i>
-            No data yet
-          </div>
+          <div class="text-center text-muted py-5"><i class="bi bi-pie-chart fs-1 d-block mb-2 opacity-25"></i>No data yet</div>
         {% endif %}
       </div>
     </div>
@@ -56,32 +50,23 @@
   <div class="col-lg-7">
     <div class="card border-0 shadow-sm h-100" style="border-radius:14px;">
       <div class="card-body p-4">
-        <h6 class="fw-bold mb-3 text-dark">Monthly Admissions (Last 6 Months)</h6>
+        <h6 class="fw-bold mb-3 text-dark">Cases Received (Last 6 Months)</h6>
         {% if by_month %}
           <canvas id="monthChart" height="220"></canvas>
         {% else %}
-          <div class="text-center text-muted py-5">
-            <i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-25"></i>
-            No data yet
-          </div>
+          <div class="text-center text-muted py-5"><i class="bi bi-bar-chart fs-1 d-block mb-2 opacity-25"></i>No data yet</div>
         {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── Recent Cases ───────────────────────────────────── -->
 <div class="card border-0 shadow-sm" style="border-radius:14px;">
   <div class="card-body p-0">
     <div class="d-flex align-items-center justify-content-between px-4 pt-4 pb-3">
-      <h6 class="fw-bold mb-0 text-dark">
-        <i class="bi bi-clock-history me-2 text-primary"></i>Recent Cases
-      </h6>
-      <a href="{{ url_for('cases.list_cases') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
-        View All <i class="bi bi-arrow-right ms-1"></i>
-      </a>
+      <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-clock-history me-2 text-primary"></i>Recent Cases</h6>
+      <a href="{{ url_for('cases.list_cases') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">View All <i class="bi bi-arrow-right ms-1"></i></a>
     </div>
-
     <div class="table-responsive">
       <table class="table mb-0" style="font-size:.875rem;">
         <thead>
@@ -89,7 +74,7 @@
             <th class="text-white fw-semibold py-3 px-4" style="font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;">Case No.</th>
             <th class="text-white fw-semibold py-3 px-4" style="font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;">Patient</th>
             <th class="text-white fw-semibold py-3 px-4" style="font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;">Type</th>
-            <th class="text-white fw-semibold py-3 px-4" style="font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;">Admitted</th>
+            <th class="text-white fw-semibold py-3 px-4" style="font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;">Received</th>
             <th class="text-white fw-semibold py-3 px-4" style="font-size:.75rem;letter-spacing:.05em;text-transform:uppercase;">Status</th>
             <th class="text-white fw-semibold py-3 px-4" style="font-size:.75rem;"></th>
           </tr>
@@ -97,40 +82,27 @@
         <tbody>
           {% for c in recent %}
           <tr class="border-bottom" style="border-color:#f1f5f9!important;">
+            <td class="px-4 py-3"><code class="text-primary fw-semibold">{{ c.case_number }}</code></td>
+            <td class="px-4 py-3">{{ c.patient_name or 'Unidentified' }}</td>
+            <td class="px-4 py-3"><span class="badge rounded-pill fw-normal px-2 py-1" style="background:#e2e8f0;color:#334155;font-size:.75rem;">{{ c.case_type }}</span></td>
+            <td class="px-4 py-3 text-muted">{{ c.received_date.strftime('%Y-%m-%d') if c.received_date else '—' }}</td>
             <td class="px-4 py-3">
-              <code class="text-primary fw-semibold">{{ c.case_number }}</code>
-            </td>
-            <td class="px-4 py-3">{{ c.patient_name or '—' }}</td>
-            <td class="px-4 py-3">
-              <span class="badge rounded-pill fw-normal px-2 py-1"
-                    style="background:#e2e8f0;color:#334155;font-size:.75rem;">
-                {{ c.case_type }}
-              </span>
-            </td>
-            <td class="px-4 py-3 text-muted">{{ c.admission_date or '—' }}</td>
-            <td class="px-4 py-3">
-              {% if c.status == 'Open' %}
-                <span class="badge rounded-pill px-2 py-1" style="background:#dbeafe;color:#1d4ed8;font-size:.75rem;">Open</span>
-              {% elif c.status == 'In Progress' %}
-                <span class="badge rounded-pill px-2 py-1" style="background:#fef3c7;color:#92400e;font-size:.75rem;">In Progress</span>
+              {% if c.status == 'Under Examination' %}
+                <span class="badge rounded-pill px-2 py-1" style="background:#dbeafe;color:#1d4ed8;font-size:.75rem;">Under Examination</span>
+              {% elif c.status == 'Awaiting Lab' %}
+                <span class="badge rounded-pill px-2 py-1" style="background:#ffedd5;color:#c2410c;font-size:.75rem;">Awaiting Lab</span>
+              {% elif c.status == 'Report Pending' %}
+                <span class="badge rounded-pill px-2 py-1" style="background:#ede9fe;color:#6d28d9;font-size:.75rem;">Report Pending</span>
               {% else %}
-                <span class="badge rounded-pill px-2 py-1" style="background:#dcfce7;color:#15803d;font-size:.75rem;">Closed</span>
+                <span class="badge rounded-pill px-2 py-1" style="background:#dcfce7;color:#15803d;font-size:.75rem;">Despatched</span>
               {% endif %}
             </td>
             <td class="px-4 py-3">
-              <a href="{{ url_for('cases.view_case', cid=c.case_id) }}"
-                 class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                <i class="bi bi-eye me-1"></i>View
-              </a>
+              <a href="{{ url_for('cases.view_case', cid=c.case_id) }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="bi bi-eye me-1"></i>View</a>
             </td>
           </tr>
           {% else %}
-          <tr>
-            <td colspan="6" class="text-center text-muted py-5">
-              <i class="bi bi-folder-x fs-2 d-block mb-2 opacity-25"></i>
-              No cases yet. <a href="{{ url_for('cases.add_case') }}">Add the first case</a>
-            </td>
-          </tr>
+          <tr><td colspan="6" class="text-center text-muted py-5"><i class="bi bi-folder-x fs-2 d-block mb-2 opacity-25"></i>No cases yet. <a href="{{ url_for('cases.add_case') }}">Add the first case</a></td></tr>
           {% endfor %}
         </tbody>
       </table>
@@ -142,7 +114,6 @@
 
 {% block scripts %}
 <script>
-  // Safe data extraction — avoids Jinja/JS conflicts
   const typeLabels = {{ by_type | map(attribute='case_type') | list | tojson | safe }};
   const typeData   = {{ by_type | map(attribute='total')    | list | tojson | safe }};
   const mLabels    = {{ by_month | map(attribute='month')   | list | tojson | safe }};
@@ -151,41 +122,19 @@
   if (typeLabels.length > 0) {
     new Chart(document.getElementById('typeChart'), {
       type: 'doughnut',
-      data: {
-        labels: typeLabels,
-        datasets: [{
-          data: typeData,
-          backgroundColor: ['#3b82f6','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899'],
-          borderWidth: 3, borderColor: '#fff'
-        }]
-      },
-      options: {
-        plugins: { legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } } },
-        cutout: '62%'
-      }
+      data: { labels: typeLabels, datasets: [{ data: typeData,
+        backgroundColor: ['#3b82f6','#ef4444','#f59e0b','#10b981','#8b5cf6','#ec4899'],
+        borderWidth: 3, borderColor: '#fff' }] },
+      options: { plugins: { legend: { position: 'bottom', labels: { padding: 14, font: { size: 12 } } } }, cutout: '62%' }
     });
   }
-
   if (mLabels.length > 0) {
     new Chart(document.getElementById('monthChart'), {
       type: 'bar',
-      data: {
-        labels: mLabels,
-        datasets: [{
-          label: 'Cases Admitted',
-          data: mData,
-          backgroundColor: '#3b82f6',
-          borderRadius: 8,
-          borderSkipped: false
-        }]
-      },
-      options: {
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } },
-          x: { grid: { display: false } }
-        }
-      }
+      data: { labels: mLabels, datasets: [{ label: 'Cases Received', data: mData,
+        backgroundColor: '#3b82f6', borderRadius: 8, borderSkipped: false }] },
+      options: { plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
     });
   }
 </script>

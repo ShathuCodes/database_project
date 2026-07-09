@@ -1,42 +1,53 @@
-=======================================================
-  FORENSIC MIS — HOW TO RUN
-=======================================================
+HOW TO RUN — Forensic Medico-Legal Database System
+=====================================================
 
-STEP 1: Open .env file and change DB_PASSWORD
-----------------------------------------------
-Open the .env file in your project folder.
-Change DB_PASSWORD=postgres to your actual PostgreSQL password.
+PREREQUISITES
+  - PostgreSQL 14+ installed and running
+  - Python 3.10+
 
-Example:
-  DB_PASSWORD=mypassword123
+STEP-BY-STEP
+  1) Create the database:
+       createdb forensic_db
 
-----------------------------------------------
-STEP 2: Create the database in pgAdmin
-----------------------------------------------
-Open pgAdmin → right click Databases → Create → Database
-Name: forensic_db
+  2) Create a virtual environment and install dependencies:
+       python3 -m venv venv
+       source venv/bin/activate        (Windows: venv\Scripts\activate)
+       pip install -r requirements.txt
 
-----------------------------------------------
-STEP 3: Run the schema in pgAdmin
-----------------------------------------------
-Click forensic_db → Query Tool
-Open db_schema/schema.sql → Run (F5)
+  3) Create a .env file in the project root:
+       DB_HOST=localhost
+       DB_PORT=5432
+       DB_NAME=forensic_db
+       DB_USER=postgres
+       DB_PASSWORD=<your-postgres-password>
+       SECRET_KEY=<any-random-string>
 
-----------------------------------------------
-STEP 4: Activate venv and run
-----------------------------------------------
-In VS Code terminal, inside your project folder:
+  4) Build the schema and load demo data in one step:
+       export FLASK_APP=run.py         (Windows: set FLASK_APP=run.py)
+       flask init-db
 
-  venv\Scripts\activate
-  python run.py
+     This runs db_schema/schema.sql (creates every table, constraint,
+     index and view) then db_schema/seed.sql (loads dummy patients,
+     cases, postmortems, clinical exams, skeletal exams, specimens,
+     lab requests/results, reports, audit log and notifications), and
+     replaces the placeholder password hash with a real bcrypt hash so
+     you can log in with "password123".
 
-----------------------------------------------
-STEP 5: Open browser
-----------------------------------------------
-  http://127.0.0.1:5000
+  5) Start the server:
+       python run.py
 
-Default login after init-db:
-  Username: admin
-  Password: Password123
+  6) Open http://127.0.0.1:5000 and log in with:
+       username: admin
+       password: password123
 
-=======================================================
+RESETTING THE DATABASE
+  To wipe and reload demo data at any time:
+       dropdb forensic_db && createdb forensic_db && flask init-db
+
+RUNNING THE RAW SQL DIRECTLY (psql)
+  psql -d forensic_db -f db_schema/schema.sql
+  psql -d forensic_db -f db_schema/seed.sql
+  (Note: seed.sql ships with one bcrypt hash placeholder reused across
+   demo users — run.py's `flask init-db` swaps it for a real hash. If
+   you load seed.sql directly with psql instead, update app_user rows'
+   password_hash yourself before logging in.)

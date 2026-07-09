@@ -1,77 +1,102 @@
 {% extends 'base.html' %}
 {% block title %}{{ action }} Postmortem — Forensic MIS{% endblock %}
-{% block page_title %}{{ action }} Postmortem{% endblock %}
+{% block page_title %}{{ action }} Postmortem Record{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">{{ action }} Postmortem Record</h5>
-  <a href="{{ url_for('postmortem.list_pm') }}" class="btn btn-sm btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i>Back
-  </a>
-</div>
-
-<div class="table-card p-4" style="max-width:720px">
+<div class="section-card" style="max-width:960px;">
   <form method="POST">
+    <h6 class="fw-bold mb-3">Event</h6>
     <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Case <span class="text-danger">*</span></label>
-        <select name="case_id" class="form-select" required>
-          <option value="">— Select Case —</option>
-          {% for c in cases %}
-          <option value="{{ c.case_id }}"
-            {{ 'selected' if record and record.case_id == c.case_id }}>{{ c.case_number }}</option>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Case *</label>
+        {% if event %}
+          <input type="text" class="form-control" value="{{ event.case_id }}" disabled>
+          <input type="hidden" name="case_id" value="{{ event.case_id }}">
+        {% else %}
+          <select name="case_id" class="form-select" required>
+            {% for c in cases %}<option value="{{ c.case_id }}">{{ c.case_number }}</option>{% endfor %}
+          </select>
+        {% endif %}
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Examination Date/Time *</label>
+        <input type="datetime-local" name="event_date" class="form-control" required
+               value="{{ event.event_date.strftime('%Y-%m-%dT%H:%M') if event and event.event_date else '' }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Conducted By *</label>
+        <select name="staff_id" class="form-select" required>
+          {% for s in staff %}
+          <option value="{{ s.staff_id }}" {{ 'selected' if event and event.staff_id==s.staff_id }}>{{ s.full_name }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Doctor</label>
-        <select name="doctor_id" class="form-select">
-          <option value="">— Select Doctor —</option>
-          {% for d in doctors %}
-          <option value="{{ d.staff_id }}"
-            {{ 'selected' if record and record.doctor_id == d.staff_id }}>{{ d.full_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-semibold small">Examination Date</label>
-        <input type="date" name="exam_date" class="form-control"
-               value="{{ record.exam_date if record else '' }}">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-semibold small">Manner of Death</label>
-        <select name="manner_of_death" class="form-select">
+    </div>
+
+    <h6 class="fw-bold mt-4 mb-3">Postmortem Findings</h6>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label small fw-semibold">Date/Time of Death</label>
+        <input type="datetime-local" name="date_time_of_death" class="form-control"
+               value="{{ record.date_time_of_death.strftime('%Y-%m-%dT%H:%M') if record and record.date_time_of_death else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Requested By (Name)</label>
+        <input type="text" name="requested_by_name" class="form-control" value="{{ record.requested_by_name if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Requested By (Designation)</label>
+        <input type="text" name="requested_by_designation" class="form-control" value="{{ record.requested_by_designation if record else '' }}"></div>
+
+      <div class="col-md-4"><label class="form-label small fw-semibold">District</label>
+        <input type="text" name="district" class="form-control" value="{{ record.district if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Place of Examination</label>
+        <input type="text" name="place_of_examination" class="form-control" value="{{ record.place_of_examination if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Register Serial No.</label>
+        <input type="text" name="register_serial_no" class="form-control" value="{{ record.register_serial_no if record else '' }}"></div>
+
+      <div class="col-md-6"><label class="form-label small fw-semibold">Scene Description</label>
+        <textarea name="scene_description" class="form-control" rows="2">{{ record.scene_description if record else '' }}</textarea></div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">External Examination Description</label>
+        <textarea name="external_exam_description" class="form-control" rows="2">{{ record.external_exam_description if record else '' }}</textarea></div>
+
+      <div class="col-md-3"><label class="form-label small fw-semibold">Estimated Age</label>
+        <input type="text" name="estimated_age" class="form-control" value="{{ record.estimated_age if record else '' }}"></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Sex</label>
+        <select name="sex" class="form-select">
           <option value="">— Select —</option>
-          {% for m in manners %}
-          <option value="{{ m }}"
-            {{ 'selected' if record and record.manner_of_death == m }}>{{ m }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="col-md-4">
-        <label class="form-label fw-semibold small">Body Condition</label>
-        <input type="text" name="body_condition" class="form-control"
-               value="{{ record.body_condition if record else '' }}">
-      </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Cause of Death</label>
-        <input type="text" name="cause_of_death" class="form-control"
-               value="{{ record.cause_of_death if record else '' }}">
-      </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Findings</label>
-        <textarea name="findings" class="form-control" rows="4">{{ record.findings if record else '' }}</textarea>
-      </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Notes</label>
-        <textarea name="notes" class="form-control" rows="2">{{ record.notes if record else '' }}</textarea>
-      </div>
-      <div class="col-12 d-flex gap-2 pt-2">
-        <button type="submit" class="btn btn-primary">
-          <i class="bi bi-check-lg me-1"></i>{{ action }} Record
-        </button>
-        <a href="{{ url_for('postmortem.list_pm') }}" class="btn btn-outline-secondary">Cancel</a>
-      </div>
+          {% for s in sex_options %}<option value="{{ s }}" {{ 'selected' if record and record.sex==s }}>{{ s }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Height (cm)</label>
+        <input type="number" step="0.01" name="height_cm" class="form-control" value="{{ record.height_cm if record else '' }}"></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Time Since Death</label>
+        <input type="text" name="time_since_death" class="form-control" value="{{ record.time_since_death if record else '' }}"></div>
+
+      <div class="col-md-4"><label class="form-label small fw-semibold">Eyes &amp; Pupils</label>
+        <input type="text" name="eyes_and_pupils" class="form-control" value="{{ record.eyes_and_pupils if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Hair Description</label>
+        <input type="text" name="hair_description" class="form-control" value="{{ record.hair_description if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Teeth Condition</label>
+        <input type="text" name="teeth_condition" class="form-control" value="{{ record.teeth_condition if record else '' }}"></div>
+
+      <div class="col-md-4"><label class="form-label small fw-semibold">Tongue Condition</label>
+        <input type="text" name="tongue_condition" class="form-control" value="{{ record.tongue_condition if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Primary Flaccidity</label>
+        <input type="text" name="primary_flaccidity" class="form-control" value="{{ record.primary_flaccidity if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Rigor Mortis</label>
+        <input type="text" name="rigor_mortis" class="form-control" value="{{ record.rigor_mortis if record else '' }}"></div>
+
+      <div class="col-md-4"><label class="form-label small fw-semibold">Hypostasis</label>
+        <input type="text" name="hypostasis" class="form-control" value="{{ record.hypostasis if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Putrefaction</label>
+        <input type="text" name="putrefaction" class="form-control" value="{{ record.putrefaction if record else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Hands &amp; Nails Condition</label>
+        <input type="text" name="hands_nails_condition" class="form-control" value="{{ record.hands_nails_condition if record else '' }}"></div>
+
+      <div class="col-md-6"><label class="form-label small fw-semibold">Cause of Death</label>
+        <textarea name="cause_of_death" class="form-control" rows="2">{{ record.cause_of_death if record else '' }}</textarea></div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">Conclusion</label>
+        <textarea name="conclusion" class="form-control" rows="2">{{ record.conclusion if record else '' }}</textarea></div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Postmortem</button>
+      <a href="{{ url_for('postmortem.list_pm') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>

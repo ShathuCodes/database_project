@@ -166,9 +166,12 @@
 
       <!-- Role hints -->
       <div class="role-hints">
-        <p>Choose your role when signing up</p>
-        <span>Hospital Management</span>
-        <span>Police Management</span>
+        <p>Demo login: any username below, password "password123"</p>
+        <span>admin</span>
+        <span>dr.perera</span>
+        <span>dr.fernando</span>
+        <span>tech.wick</span>
+        <span>clerk.rana</span>
       </div>
 
       <div class="auth-tabs">
@@ -245,16 +248,18 @@
         <div class="mb-3">
           <label class="form-label">Role</label>
           <div class="role-select">
-            <label class="role-option" id="role-hospital">
-              <input type="radio" name="role" value="Hospital Management" required>
-              <strong>Hospital Management</strong>
-              <small>Manage patients, cases, lab & reports</small>
+            {% for r in register_roles %}
+            <label class="role-option" id="role-{{ r|replace(' ', '-')|lower }}">
+              <input type="radio" name="role" value="{{ r }}" required>
+              <strong>{{ r }}</strong>
+              <small>
+                {% if r == 'Senior JMO' %}Full clinical, postmortem & lab access
+                {% elif r == 'JMO' %}Record clinical exams, postmortems & specimens
+                {% elif r == 'Lab Technician' %}Manage specimens and lab results
+                {% else %}View and register patients & cases{% endif %}
+              </small>
             </label>
-            <label class="role-option" id="role-police">
-              <input type="radio" name="role" value="Police Management" required>
-              <strong>Police Management</strong>
-              <small>View cases and forensic records</small>
-            </label>
+            {% endfor %}
           </div>
         </div>
 

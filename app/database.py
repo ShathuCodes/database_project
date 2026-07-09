@@ -55,10 +55,37 @@ def execute(sql, params=None, returning=False):
         conn.close()
 
 
-def log_action(user_id, action, table_name, record_id=None, details=None, ip=None):
-    """Write to audit_log table."""
+def run_in_transaction(fn):
+    """Run a callback that receives a live cursor, committing at the end
+       (or rolling back on any exception). Used for multi-table subtype
+       inserts such as CASE_EVENT + POSTMORTEM/CLINICAL_EXAMINATION/SKELETAL_EXAMINATION."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        result = fn(cur)
+        conn.commit()
+        return result
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def log_action(user_id, action_type, table_name, record_id=None,
+                old_values=None, new_values=None, ip=None):
+    """Write to audit_log table. action_type must be INSERT / UPDATE / DELETE."""
     execute(
-        """INSERT INTO audit_log (user_id, action, table_name, record_id, details, ip_address)
-           VALUES (%s, %s, %s, %s, %s, %s)""",
-        (user_id, action, table_name, record_id, details, ip)
+        """INSERT INTO audit_log (user_id, table_name, record_id, action_type,
+                                   old_values, new_values, ip_address)
+           VALUES (%s, %s, %s, %s, %s, %s, %s)""",
+        (user_id, table_name, record_id, action_type, old_values, new_values, ip)
+    )
+
+
+def notify(user_id, title, message_text):
+    """Insert a NOTIFICATION row for a user."""
+    execute(
+        "INSERT INTO notification (user_id, title, message_text) VALUES (%s,%s,%s)",
+        (user_id, title, message_text)
     )

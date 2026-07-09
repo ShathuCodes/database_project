@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block title %}Skeletal Examinations — Forensic MIS{% endblock %}
+{% block page_title %}Skeletal Examinations{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">Skeletal Examinations</h5>
+  {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+  <a href="{{ url_for('skeletal.add_skeletal') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> New Skeletal Exam</a>
+  {% endif %}
+</div>
+
+<div class="filter-bar">
+  <form method="GET" class="row g-2 align-items-end">
+    <div class="col-md-5">
+      <label class="form-label small fw-semibold mb-1">Search</label>
+      <input name="search" class="form-control form-control-sm" placeholder="Case No. or specimen no." value="{{ search }}">
+    </div>
+    <div class="col-auto d-flex gap-1">
+      <button type="submit" class="btn btn-primary btn-sm">Filter</button>
+      <a href="{{ url_for('skeletal.list_skeletal') }}" class="btn btn-outline-secondary btn-sm">Clear</a>
+    </div>
+  </form>
+</div>
+
+<div class="table-card">
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Case No.</th><th>Date</th><th>Specimen No.</th><th>Gender Conclusion</th><th>Age Conclusion</th><th></th></tr></thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td><code>{{ r.case_number }}</code></td>
+          <td>{{ r.event_date.strftime('%Y-%m-%d') if r.event_date else '—' }}</td>
+          <td>{{ r.specimen_no or '—' }}</td>
+          <td>{{ r.gender_conclusion or '—' }}</td>
+          <td>{{ r.age_conclusion or '—' }}</td>
+          <td><a href="{{ url_for('skeletal.view_skeletal', eid=r.event_id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-5">No skeletal examinations found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-3 text-muted small border-top">Showing {{ records|length }} record(s)</div>
+</div>
+{% endblock %}

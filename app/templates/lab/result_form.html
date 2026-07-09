@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}Lab Result — Forensic MIS{% endblock %}
+{% block page_title %}{{ 'Edit' if result else 'Enter' }} Lab Result{% endblock %}
+
+{% block content %}
+<div class="section-card" style="max-width:760px;">
+  <p class="text-muted small">For lab request: <strong>{{ lab_request.lab_name }}</strong></p>
+  <form method="POST">
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label small fw-semibold">Laboratory No.</label>
+        <input type="text" name="laboratory_no" class="form-control" value="{{ result.laboratory_no if result else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Result Date</label>
+        <input type="datetime-local" name="result_date" class="form-control"
+               value="{{ result.result_date.strftime('%Y-%m-%dT%H:%M') if result and result.result_date else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Received By</label>
+        <input type="text" name="received_by" class="form-control" value="{{ result.received_by if result else '' }}"></div>
+
+      <div class="col-md-12"><label class="form-label small fw-semibold">Lab Notes</label>
+        <textarea name="lab_notes" class="form-control" rows="2">{{ result.lab_notes if result else '' }}</textarea></div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">Findings</label>
+        <textarea name="findings" class="form-control" rows="3">{{ result.findings if result else '' }}</textarea></div>
+
+      <div class="col-md-4"><label class="form-label small fw-semibold">Reported By</label>
+        <input type="text" name="reported_by" class="form-control" value="{{ result.reported_by if result else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Checked By</label>
+        <input type="text" name="checked_by" class="form-control" value="{{ result.checked_by if result else '' }}"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Sent On</label>
+        <input type="datetime-local" name="sent_on_date" class="form-control"
+               value="{{ result.sent_on_date.strftime('%Y-%m-%dT%H:%M') if result and result.sent_on_date else '' }}"></div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>Save Result</button>
+      <a href="{{ url_for('lab.view_request', rid=lab_request.lab_request_id) }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

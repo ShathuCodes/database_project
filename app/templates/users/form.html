@@ -1,55 +1,48 @@
 {% extends 'base.html' %}
-{% block title %}Add User — Forensic MIS{% endblock %}
-{% block page_title %}Add User{% endblock %}
+{% block title %}{{ action }} User — Forensic MIS{% endblock %}
+{% block page_title %}{{ action }} User Account{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">Add User Account</h5>
-  <a href="{{ url_for('users.list_users') }}" class="btn btn-sm btn-outline-secondary">
-    <i class="bi bi-arrow-left me-1"></i>Back
-  </a>
-</div>
-
-<div class="table-card p-4" style="max-width:600px">
+<div class="section-card" style="max-width:640px;">
   <form method="POST">
     <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label fw-semibold small">Username <span class="text-danger">*</span></label>
-        <input type="text" name="username" class="form-control" required
-               value="{{ record.username if record else '' }}">
+      <div class="col-md-12">
+        <label class="form-label small fw-semibold">Username *</label>
+        <input type="text" name="username" class="form-control" required value="{{ record.username if record else '' }}">
+      </div>
+      <div class="col-md-12">
+        <label class="form-label small fw-semibold">Password {{ '(leave blank to keep unchanged)' if record else '*' }}</label>
+        <input type="password" name="password" class="form-control" {{ 'required' if not record }}>
       </div>
       <div class="col-md-6">
-        <label class="form-label fw-semibold small">Role <span class="text-danger">*</span></label>
-        <select name="role" class="form-select" required>
-          <option value="">— Select Role —</option>
-          {% for r in uroles %}
-          <option value="{{ r }}" {{ 'selected' if record and record.role == r }}>{{ r }}</option>
+        <label class="form-label small fw-semibold">Role *</label>
+        <select name="role_id" class="form-select" required>
+          {% for r in roles %}
+          <option value="{{ r.role_id }}" {{ 'selected' if record and record.role_id==r.role_id }}>{{ r.role_name }}</option>
           {% endfor %}
         </select>
       </div>
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Linked Staff Member</label>
+      <div class="col-md-6">
+        <label class="form-label small fw-semibold">Linked Staff (optional)</label>
         <select name="staff_id" class="form-select">
           <option value="">— None —</option>
-          {% for s in staff_list %}
-          <option value="{{ s.staff_id }}"
-            {{ 'selected' if record and record.staff_id == s.staff_id }}>{{ s.full_name }}</option>
+          {% for s in staff %}
+          <option value="{{ s.staff_id }}" {{ 'selected' if record and record.staff_id==s.staff_id }}>{{ s.full_name }}</option>
           {% endfor %}
         </select>
       </div>
-      {% if action == 'Add' %}
-      <div class="col-12">
-        <label class="form-label fw-semibold small">Password <span class="text-danger">*</span></label>
-        <input type="password" name="password" class="form-control" minlength="6" required
-               placeholder="Minimum 6 characters">
+      <div class="col-md-12">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="is_active" id="is_active"
+                 {{ 'checked' if not record or record.is_active }}>
+          <label class="form-check-label" for="is_active">Account Active</label>
+        </div>
       </div>
-      {% endif %}
-      <div class="col-12 d-flex gap-2 pt-2">
-        <button type="submit" class="btn btn-primary">
-          <i class="bi bi-check-lg me-1"></i>{{ action }} User
-        </button>
-        <a href="{{ url_for('users.list_users') }}" class="btn btn-outline-secondary">Cancel</a>
-      </div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} User</button>
+      <a href="{{ url_for('users.list_users') }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div>

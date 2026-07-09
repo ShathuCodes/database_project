@@ -1,14 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Staff — Forensic MIS{% endblock %}
-{% block page_title %}Staff Management{% endblock %}
+{% block page_title %}Staff Directory{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">Staff Members</h5>
-  {% if current_user.role == 'Hospital Management' %}
-  <a href="{{ url_for('staff.add_staff') }}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg me-1"></i> Add Staff
-  </a>
+  <h5 class="fw-bold mb-0">Staff</h5>
+  {% if current_user.role == 'Administrator' %}
+  <a href="{{ url_for('staff.add_staff') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> New Staff Member</a>
   {% endif %}
 </div>
 
@@ -16,17 +14,7 @@
   <form method="GET" class="row g-2 align-items-end">
     <div class="col-md-5">
       <label class="form-label small fw-semibold mb-1">Search</label>
-      <input name="search" class="form-control form-control-sm"
-             placeholder="Name or Email" value="{{ search }}">
-    </div>
-    <div class="col-md-3">
-      <label class="form-label small fw-semibold mb-1">Role</label>
-      <select name="role" class="form-select form-select-sm">
-        <option value="">All Roles</option>
-        {% for r in roles %}
-        <option value="{{ r }}" {{ 'selected' if role == r }}>{{ r }}</option>
-        {% endfor %}
-      </select>
+      <input name="search" class="form-control form-control-sm" placeholder="Name or SLMC No." value="{{ search }}">
     </div>
     <div class="col-auto d-flex gap-1">
       <button type="submit" class="btn btn-primary btn-sm">Filter</button>
@@ -38,34 +26,29 @@
 <div class="table-card">
   <div class="table-responsive">
     <table class="table mb-0">
-      <thead>
-        <tr><th>Name</th><th>Role</th><th>Specialization</th><th>Contact</th><th>Email</th><th>Actions</th></tr>
-      </thead>
+      <thead><tr><th>Name</th><th>Designation</th><th>SLMC Reg No.</th><th>Station</th><th>Actions</th></tr></thead>
       <tbody>
-        {% for r in records %}
+        {% for s in staff_list %}
         <tr>
-          <td class="fw-semibold">{{ r.full_name }}</td>
-          <td><span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">{{ r.role }}</span></td>
-          <td>{{ r.specialization or '—' }}</td>
-          <td>{{ r.contact or '—' }}</td>
-          <td>{{ r.email or '—' }}</td>
+          <td class="fw-semibold">{{ s.full_name }}</td>
+          <td><span class="badge rounded-pill" style="background:#e2e8f0;color:#334155;">{{ s.designation }}</span></td>
+          <td>{{ s.slmc_regno or '—' }}</td>
+          <td>{{ s.station or '—' }}</td>
           <td>
-            {% if current_user.role == 'Hospital Management' %}
-            <a href="{{ url_for('staff.edit_staff', sid=r.staff_id) }}"
-               class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
-            <form method="POST" action="{{ url_for('staff.delete_staff', sid=r.staff_id) }}"
-                  class="d-inline" onsubmit="return confirm('Delete {{ r.full_name }}?')">
+            {% if current_user.role == 'Administrator' %}
+            <a href="{{ url_for('staff.edit_staff', sid=s.staff_id) }}" class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
+            <form method="POST" action="{{ url_for('staff.delete_staff', sid=s.staff_id) }}" class="d-inline" onsubmit="return confirm('Delete {{ s.full_name }}?')">
               <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
             </form>
             {% endif %}
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="text-center text-muted py-5">No staff found.</td></tr>
+        <tr><td colspan="5" class="text-center text-muted py-5">No staff records found.</td></tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
-  <div class="p-3 text-muted small border-top">Showing {{ records|length }} record(s)</div>
+  <div class="p-3 text-muted small border-top">Showing {{ staff_list|length }} record(s)</div>
 </div>
 {% endblock %}

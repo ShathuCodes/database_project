@@ -5,7 +5,7 @@ app = create_app()
 
 @app.cli.command('init-db')
 def init_db():
-    """Create tables and seed sample data with real bcrypt hashes."""
+    """Create tables and seed sample data with a real bcrypt hash for all demo users."""
     # pyrefly: ignore [missing-import]
     import bcrypt
     from app import database
@@ -15,25 +15,26 @@ def init_db():
     conn = database.get_connection()
     cur  = conn.cursor()
     cur.execute(schema)
-    
+    conn.commit()
+
     print("Seeding database...")
     with open('db_schema/seed.sql') as f:
         seed_sql = f.read()
-    
-    # Replace placeholder hashes with real bcrypt hashes
-    pw_hash = bcrypt.hashpw(b'Password123', bcrypt.gensalt()).decode()
-    seed_sql = seed_sql.replace("'$2b$12$placeholder_admin_hash_here'", f"'{pw_hash}'")
-    seed_sql = seed_sql.replace("'$2b$12$placeholder_doctor_hash_here'", f"'{pw_hash}'")
-    seed_sql = seed_sql.replace("'$2b$12$placeholder_jmo_hash_here'", f"'{pw_hash}'")
-    seed_sql = seed_sql.replace("'$2b$12$placeholder_lab_hash_here'", f"'{pw_hash}'")
-    seed_sql = seed_sql.replace("'$2b$12$placeholder_clerk_hash_here'", f"'{pw_hash}'")
-    seed_sql = seed_sql.replace("'$2b$12$placeholder_police_hash_here'", f"'{pw_hash}'")
-    
+
+    # seed.sql ships with one placeholder bcrypt hash reused for every demo
+    # user (login password "password123"); swap it for a freshly-generated
+    # hash so the app can actually verify it.
+    pw_hash = bcrypt.hashpw(b'password123', bcrypt.gensalt()).decode()
+    seed_sql = seed_sql.replace(
+        '$2b$12$KIXQwYyN2s0Z0m7C7d1uWuU4o9v4b1K3f8N1qz1s0lQe5T1c1YB0e',
+        pw_hash
+    )
+
     cur.execute(seed_sql)
     conn.commit()
     conn.close()
     print("Database schema and seed data created successfully.")
-    print("Default users created with password: Password123")
+    print("Default users created with password: password123")
     print("Done. Run 'python run.py' or 'flask run' to start the server.")
 
 if __name__ == '__main__':

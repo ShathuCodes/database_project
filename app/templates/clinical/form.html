@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Clinical Examination{% endblock %}
+{% block page_title %}{{ action }} Clinical Examination{% endblock %}
+
+{% block content %}
+<div class="section-card" style="max-width:920px;">
+  <form method="POST">
+    <h6 class="fw-bold mb-3">Event</h6>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Case *</label>
+        <select name="case_id" class="form-select" required>
+          {% for c in cases %}<option value="{{ c.case_id }}">{{ c.case_number }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Examination Date/Time *</label>
+        <input type="datetime-local" name="event_date" class="form-control" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small fw-semibold">Examined By *</label>
+        <select name="staff_id" class="form-select" required>
+          {% for s in staff %}<option value="{{ s.staff_id }}">{{ s.full_name }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <h6 class="fw-bold mt-4 mb-3">Examination Details</h6>
+    <div class="row g-3">
+      <div class="col-md-4"><label class="form-label small fw-semibold">Place of Exam</label>
+        <input type="text" name="place_of_exam" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Hospital No.</label>
+        <input type="text" name="hospital_no" class="form-control"></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Ward / Bed No.</label>
+        <div class="d-flex gap-2">
+          <input type="text" name="ward" class="form-control" placeholder="Ward">
+          <input type="text" name="bed_no" class="form-control" placeholder="Bed No.">
+        </div>
+      </div>
+
+      <div class="col-md-3"><label class="form-label small fw-semibold">Admission Date</label>
+        <input type="date" name="admission_date" class="form-control"></div>
+      <div class="col-md-3"><label class="form-label small fw-semibold">Discharge Date</label>
+        <input type="date" name="discharge_date" class="form-control"></div>
+      <div class="col-md-3 d-flex align-items-end">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="consent_obtained" id="consent_obtained">
+          <label class="form-check-label small" for="consent_obtained">Consent Obtained</label>
+        </div>
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="alcohol_smell_present" id="alcohol_smell_present">
+          <label class="form-check-label small" for="alcohol_smell_present">Alcohol Smell Present</label>
+        </div>
+      </div>
+
+      <div class="col-md-6"><label class="form-label small fw-semibold">Reason for Referral</label>
+        <textarea name="reason_for_referral" class="form-control" rows="2"></textarea></div>
+      <div class="col-md-6"><label class="form-label small fw-semibold">History Given</label>
+        <textarea name="history_given" class="form-control" rows="2"></textarea></div>
+
+      <div class="col-md-4"><label class="form-label small fw-semibold">Under Influence of Alcohol</label>
+        <select name="under_influence_alcohol" class="form-select">
+          <option value="">— Select —</option>
+          {% for o in yn_uncertain %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Drugs Consumed</label>
+        <select name="drugs_consumed" class="form-select">
+          <option value="">— Select —</option>
+          {% for o in yn_nottested %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Under Influence of Drugs</label>
+        <select name="under_influence_drugs" class="form-select">
+          <option value="">— Select —</option>
+          {% for o in yn_nottested %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+        </select></div>
+
+      <div class="col-md-4"><label class="form-label small fw-semibold">Investigations Ordered</label>
+        <textarea name="investigations_ordered" class="form-control" rows="2"></textarea></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Referrals Made</label>
+        <textarea name="referrals_made" class="form-control" rows="2"></textarea></div>
+      <div class="col-md-4"><label class="form-label small fw-semibold">Other Opinions</label>
+        <textarea name="other_opinions" class="form-control" rows="2"></textarea></div>
+    </div>
+
+    <h6 class="fw-bold mt-4 mb-3">Sexual Assault Findings (optional extension)</h6>
+    <div class="form-check mb-3">
+      <input class="form-check-input" type="checkbox" name="is_sexual_assault" id="is_sexual_assault">
+      <label class="form-check-label small" for="is_sexual_assault">This examination includes sexual assault findings</label>
+    </div>
+    <div class="row g-3">
+      <div class="col-md-12"><label class="form-label small fw-semibold">History of Assault Given</label>
+        <textarea name="history_of_assault_given" class="form-control" rows="2"></textarea></div>
+      <div class="col-md-4 form-check ms-3">
+        <input class="form-check-input" type="checkbox" name="vaginal_hymen_signs_present" id="vhs">
+        <label class="form-check-label small" for="vhs">Vaginal/Hymen Signs Present</label></div>
+      <div class="col-md-4 form-check">
+        <input class="form-check-input" type="checkbox" name="anal_penetration_signs_present" id="aps">
+        <label class="form-check-label small" for="aps">Anal Penetration Signs</label></div>
+      <div class="col-md-3 form-check">
+        <input class="form-check-input" type="checkbox" name="inter_labial_penetration_signs_present" id="ips">
+        <label class="form-check-label small" for="ips">Inter-labial Penetration Signs</label></div>
+      <div class="col-md-12"><label class="form-label small fw-semibold">Remarks</label>
+        <textarea name="saf_remarks" class="form-control" rows="2"></textarea></div>
+    </div>
+
+    <div class="mt-4 d-flex gap-2">
+      <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg me-1"></i>{{ action }} Clinical Examination</button>
+      <a href="{{ url_for('clinical.list_clinical') }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,36 +1,20 @@
 {% extends 'base.html' %}
-{% block title %}Postmortem Records — Forensic MIS{% endblock %}
+{% block title %}Postmortems — Forensic MIS{% endblock %}
 {% block page_title %}Postmortem Records{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h5 class="fw-bold mb-0">Postmortem Records</h5>
-  {% if current_user.role == 'Hospital Management' %}
-  <a href="{{ url_for('postmortem.add_pm') }}" class="btn btn-primary btn-sm">
-    <i class="bi bi-plus-lg me-1"></i> New Record
-  </a>
+  <h5 class="fw-bold mb-0">Postmortem Examinations</h5>
+  {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+  <a href="{{ url_for('postmortem.add_pm') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1"></i> New Postmortem</a>
   {% endif %}
 </div>
 
 <div class="filter-bar">
   <form method="GET" class="row g-2 align-items-end">
-    <div class="col-md-4">
+    <div class="col-md-5">
       <label class="form-label small fw-semibold mb-1">Search</label>
-      <input name="search" class="form-control form-control-sm"
-             placeholder="Case No., Patient, Cause of Death" value="{{ search }}">
-    </div>
-    <div class="col-md-3">
-      <label class="form-label small fw-semibold mb-1">Manner of Death</label>
-      <select name="manner" class="form-select form-select-sm">
-        <option value="">All</option>
-        {% for m in manners %}
-        <option value="{{ m }}" {{ 'selected' if manner == m }}>{{ m }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-3">
-      <label class="form-label small fw-semibold mb-1">From Date</label>
-      <input type="date" name="date_from" class="form-control form-control-sm" value="{{ date_from }}">
+      <input name="search" class="form-control form-control-sm" placeholder="Case No. or cause of death" value="{{ search }}">
     </div>
     <div class="col-auto d-flex gap-1">
       <button type="submit" class="btn btn-primary btn-sm">Filter</button>
@@ -42,36 +26,19 @@
 <div class="table-card">
   <div class="table-responsive">
     <table class="table mb-0">
-      <thead>
-        <tr>
-          <th>Case No.</th><th>Patient</th><th>Doctor</th>
-          <th>Exam Date</th><th>Cause of Death</th><th>Manner</th><th>Actions</th>
-        </tr>
-      </thead>
+      <thead><tr><th>Case No.</th><th>Date</th><th>District</th><th>Cause of Death</th><th>Conducted By</th><th></th></tr></thead>
       <tbody>
         {% for r in records %}
         <tr>
           <td><code>{{ r.case_number }}</code></td>
-          <td>{{ r.patient_name or '—' }}</td>
-          <td>{{ r.doctor_name or '—' }}</td>
-          <td>{{ r.exam_date or '—' }}</td>
-          <td>{{ r.cause_of_death or '—' }}</td>
-          <td><span class="badge bg-secondary">{{ r.manner_of_death or '—' }}</span></td>
-          <td>
-            {% if current_user.role == 'Hospital Management' %}
-            <a href="{{ url_for('postmortem.edit_pm', pid=r.pm_id) }}"
-               class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
-            {% endif %}
-            {% if current_user.role == 'Hospital Management' %}
-            <form method="POST" action="{{ url_for('postmortem.delete_pm', pid=r.pm_id) }}"
-                  class="d-inline" onsubmit="return confirm('Delete this postmortem record?')">
-              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-            </form>
-            {% endif %}
-          </td>
+          <td>{{ r.event_date.strftime('%Y-%m-%d') if r.event_date else '—' }}</td>
+          <td>{{ r.district or '—' }}</td>
+          <td>{{ (r.cause_of_death or '—')[:60] }}{{ '…' if r.cause_of_death and r.cause_of_death|length > 60 }}</td>
+          <td>{{ r.staff_name }}</td>
+          <td><a href="{{ url_for('postmortem.view_pm', eid=r.event_id) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a></td>
         </tr>
         {% else %}
-        <tr><td colspan="7" class="text-center text-muted py-5">No records found.</td></tr>
+        <tr><td colspan="6" class="text-center text-muted py-5">No postmortem records found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

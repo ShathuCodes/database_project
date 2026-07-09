@@ -7,7 +7,7 @@ class User(UserMixin):
     def __init__(self, user_id, username, role, staff_id, is_active):
         self.id       = user_id
         self.username = username
-        self.role     = role
+        self.role     = role          # role_name string, e.g. 'Administrator'
         self.staff_id = staff_id
         self._active  = is_active
 
@@ -21,9 +21,13 @@ class User(UserMixin):
 
 def load_user(user_id):
     row = database.fetchone(
-        "SELECT * FROM app_user WHERE user_id = %s", (user_id,)
+        """SELECT u.user_id, u.username, u.staff_id, u.is_active, r.role_name AS role
+           FROM app_user u
+           JOIN role r ON r.role_id = u.role_id
+           WHERE u.user_id = %s""",
+        (user_id,)
     )
     if row:
         return User(row['user_id'], row['username'],
-                    row['role'], row['staff_id'], row['is_active'])
+                     row['role'], row['staff_id'], row['is_active'])
     return None

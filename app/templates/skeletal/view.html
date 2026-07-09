@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Skeletal Exam — {{ record.case_number }}{% endblock %}
+{% block page_title %}Skeletal Examination — {{ record.case_number }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h5 class="fw-bold mb-0">Skeletal Examination for <code>{{ record.case_number }}</code></h5>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('cases.view_case', cid=record.case_id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-folder2-open me-1"></i>View Case</a>
+    {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+    <form method="POST" action="{{ url_for('skeletal.delete_skeletal', eid=record.event_id) }}" class="d-inline" onsubmit="return confirm('Delete this record?')">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i></button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="section-card">
+  <div class="row g-3">
+    <div class="col-md-3"><div class="text-muted small">Specimen No.</div><div class="fw-semibold">{{ record.specimen_no or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Seal Status</div><div class="fw-semibold">{{ record.seal_status or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Min. No. of Individuals</div><div class="fw-semibold">{{ record.min_no_individuals if record.min_no_individuals is not none else '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Supervised By</div><div class="fw-semibold">{{ record.supervised_by_name or '—' }}</div></div>
+    <div class="col-md-6"><div class="text-muted small">Place Found</div><div>{{ record.place_found or '—' }}</div></div>
+    <div class="col-md-6"><div class="text-muted small">Wrapping Description</div><div>{{ record.wrapping_description or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Gender Conclusion</div><div class="fw-semibold">{{ record.gender_conclusion or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Age Conclusion</div><div class="fw-semibold">{{ record.age_conclusion or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Stature Estimate</div><div class="fw-semibold">{{ record.stature_estimate or '—' }}</div></div>
+    <div class="col-md-3"><div class="text-muted small">Time Since Death</div><div class="fw-semibold">{{ record.time_since_death or '—' }}</div></div>
+    <div class="col-md-12"><div class="text-muted small">Cause of Death Opinion</div><div>{{ record.cause_of_death_opinion or '—' }}</div></div>
+  </div>
+</div>
+
+<div class="table-card mt-4">
+  <div class="p-3 pb-0"><h6 class="fw-bold mb-0">Recovered Items</h6></div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Category</th><th>Description</th><th>Serial No.</th><th>Qty</th></tr></thead>
+      <tbody>
+        {% for it in items %}
+        <tr><td>{{ it.item_category }}</td><td>{{ it.description or '—' }}</td><td>{{ it.serial_number or '—' }}</td><td>{{ it.quantity }}</td></tr>
+        {% else %}
+        <tr><td colspan="4" class="text-center text-muted py-3">No items recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
+  <form method="POST" action="{{ url_for('skeletal.add_item', eid=record.event_id) }}" class="p-3 border-top row g-2">
+    <div class="col-md-3">
+      <select name="item_category" class="form-select form-select-sm" required>
+        {% for c in item_categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-4"><input name="description" class="form-control form-control-sm" placeholder="Description"></div>
+    <div class="col-md-3"><input name="serial_number" class="form-control form-control-sm" placeholder="Serial No."></div>
+    <div class="col-md-1"><input name="quantity" type="number" min="1" value="1" class="form-control form-control-sm"></div>
+    <div class="col-md-1"><button class="btn btn-sm btn-primary w-100">Add</button></div>
+  </form>
+  {% endif %}
+</div>
+
+<div class="table-card mt-4">
+  <div class="p-3 pb-0"><h6 class="fw-bold mb-0">Specimens</h6></div>
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Type</th><th>Label</th><th>Custody Status</th></tr></thead>
+      <tbody>
+        {% for sp in specimens %}
+        <tr><td>{{ sp.specimen_type }}</td><td>{{ sp.specimen_label or '—' }}</td><td>{{ sp.chain_of_custody_status or '—' }}</td></tr>
+        {% else %}
+        <tr><td colspan="3" class="text-center text-muted py-3">No specimens linked yet. <a href="{{ url_for('evidence.add_evidence') }}">Add a specimen</a>.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
