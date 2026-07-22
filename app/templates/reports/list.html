@@ -55,10 +55,16 @@
             {% else %}<span class="badge badge-closed">Despatched</span>{% endif %}
           </td>
           <td>
+            <a href="{{ url_for('reports.view_report', rid=r.report_id) }}" class="btn btn-sm btn-outline-info me-1" title="View Official Report / Print PDF">
+              <i class="bi bi-eye"></i> View / PDF
+            </a>
+            <a href="{{ url_for('reports.download_txt', rid=r.report_id) }}" class="btn btn-sm btn-outline-success me-1" title="Download Text Report">
+              <i class="bi bi-download"></i> TXT
+            </a>
             {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
-            <a href="{{ url_for('reports.edit_report', rid=r.report_id) }}" class="btn btn-sm btn-outline-warning me-1"><i class="bi bi-pencil"></i></a>
+            <a href="{{ url_for('reports.edit_report', rid=r.report_id) }}" class="btn btn-sm btn-outline-warning me-1" title="Edit Report"><i class="bi bi-pencil"></i></a>
             <form method="POST" action="{{ url_for('reports.delete_report', rid=r.report_id) }}" class="d-inline" onsubmit="return confirm('Delete this report?')">
-              <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+              <button class="btn btn-sm btn-outline-danger" title="Delete Report"><i class="bi bi-trash"></i></button>
             </form>
             {% endif %}
           </td>

@@ -1,54 +1,196 @@
 {% extends 'base.html' %}
-{% block title %}{{ report.case_number }} Report — Forensic MIS{% endblock %}
-{% block page_title %}Court Report{% endblock %}
+{% block title %}{{ report.case_number }} — Official Medico-Legal Report{% endblock %}
+{% block page_title %}Official Medico-Legal Report{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-3">
+<style>
+@media print {
+  body { background-color: #fff !important; color: #000 !important; }
+  .no-print, nav, .sidebar, footer, .btn, .filter-bar { display: none !important; }
+  .table-card { border: none !important; box-shadow: none !important; padding: 0 !important; }
+  .report-paper { border: 2px solid #000 !important; padding: 30px !important; margin: 0 !important; box-shadow: none !important; }
+  a { text-decoration: none !important; color: #000 !important; }
+}
+.report-paper {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 40px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+.report-header-title {
+  font-family: 'Times New Roman', Times, serif;
+  letter-spacing: 1px;
+}
+.signature-line {
+  border-top: 1px dashed #475569;
+  width: 250px;
+}
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3 no-print">
   <div>
-    <h5 class="fw-bold mb-0">{{ report.report_type or 'Court Report' }}</h5>
-    <span class="text-muted small">Case: {{ report.case_number }}</span>
+    <h5 class="fw-bold mb-0"><i class="bi bi-file-earmark-medical me-2"></i>{{ report.report_type }} — {{ report.serial_no or report.case_number }}</h5>
+    <span class="text-muted small">Issued for Judicial & Medico-Legal Proceedings</span>
   </div>
   <div class="d-flex gap-2">
-    {% if current_user.role == 'Hospital Management' %}
+    <button onclick="window.print()" class="btn btn-sm btn-primary">
+      <i class="bi bi-printer me-1"></i> Print / Save as PDF
+    </button>
+    <a href="{{ url_for('reports.download_txt', rid=report.report_id) }}" class="btn btn-sm btn-outline-success">
+      <i class="bi bi-download me-1"></i> Download TXT
+    </a>
+    {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
     <a href="{{ url_for('reports.edit_report', rid=report.report_id) }}" class="btn btn-sm btn-outline-warning">
-      <i class="bi bi-pencil me-1"></i>Edit
+      <i class="bi bi-pencil me-1"></i> Edit Report
     </a>
     {% endif %}
-    <button onclick="window.print()" class="btn btn-sm btn-outline-secondary no-print">
-      <i class="bi bi-printer me-1"></i>Print
-    </button>
-    <a href="{{ url_for('reports.list_reports') }}" class="btn btn-sm btn-outline-secondary no-print">
-      <i class="bi bi-arrow-left me-1"></i>Back
+    <a href="{{ url_for('reports.list_reports') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-arrow-left me-1"></i> Back to List
     </a>
   </div>
 </div>
 
-<div class="table-card p-4">
+<div class="report-paper">
+  <!-- OFFICIAL HEADER -->
+  <div class="text-center mb-4 pb-3 border-bottom border-2">
+    <h4 class="fw-bold text-uppercase report-header-title mb-1">Department of Forensic Medicine & Medico-Legal Services</h4>
+    <h6 class="text-muted fw-semibold mb-1">{{ report.staff_station or 'Judicial Medical Officer Office' }}</h6>
+    <h5 class="fw-bold text-primary mt-3 text-uppercase border-bottom d-inline-block pb-1">
+      OFFICIAL {{ report.report_type }} (MEDICO-LEGAL REPORT)
+    </h5>
+  </div>
+
+  <!-- METADATA GRID -->
   <div class="row g-3 mb-4">
     <div class="col-md-6">
-      <table class="table table-sm mb-0">
-        <tr><td class="text-muted fw-semibold" style="width:160px">Case Number</td><td><code>{{ report.case_number }}</code></td></tr>
-        <tr><td class="text-muted fw-semibold">Case Type</td><td>{{ report.case_type or '—' }}</td></tr>
-        <tr><td class="text-muted fw-semibold">Patient</td><td>{{ report.patient_name or '—' }}</td></tr>
-        <tr><td class="text-muted fw-semibold">Examining Doctor</td><td>{{ report.doctor_name or '—' }}</td></tr>
+      <table class="table table-sm table-borderless">
+        <tr><td class="text-muted fw-semibold" style="width:160px">Case Number:</td><td><strong class="font-monospace fs-6">{{ report.case_number }}</strong></td></tr>
+        <tr><td class="text-muted fw-semibold">Serial Number:</td><td><code>{{ report.serial_no or 'N/A' }}</code></td></tr>
+        <tr><td class="text-muted fw-semibold">Case Type:</td><td><span class="badge bg-secondary">{{ report.case_type }}</span></td></tr>
+        <tr><td class="text-muted fw-semibold">Police Reference:</td><td>{{ report.police_refno or 'N/A' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Police Station:</td><td>{{ report.police_station or 'N/A' }}</td></tr>
       </table>
     </div>
     <div class="col-md-6">
-      <table class="table table-sm mb-0">
-        <tr><td class="text-muted fw-semibold" style="width:160px">Report Type</td><td>{{ report.report_type or '—' }}</td></tr>
-        <tr><td class="text-muted fw-semibold">Court</td><td>{{ report.court_name or '—' }}</td></tr>
-        <tr><td class="text-muted fw-semibold">Submission Date</td><td>{{ report.submission_date or '—' }}</td></tr>
-        <tr><td class="text-muted fw-semibold">Status</td>
-          <td><span class="badge rounded-pill
-            {% if report.status == 'Draft' %}badge-draft
-            {% elif report.status == 'Submitted' %}badge-submitted
-            {% elif report.status == 'Accepted' %}badge-accepted
-            {% else %}badge-rejected{% endif %}">{{ report.status }}</span></td></tr>
+      <table class="table table-sm table-borderless">
+        <tr><td class="text-muted fw-semibold" style="width:160px">Court / District:</td><td>{{ report.court_name or 'N/A' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Magistrate:</td><td>{{ report.magistrate_name or 'N/A' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Date Issued:</td><td>{{ report.date_issued.strftime('%Y-%m-%d %H:%M') if report.date_issued else 'N/A' }}</td></tr>
+        <tr><td class="text-muted fw-semibold">Report Status:</td>
+          <td>
+            {% if report.status == 'Draft' %}<span class="badge bg-warning text-dark">Draft</span>
+            {% elif report.status == 'Signed' %}<span class="badge bg-info text-dark">Signed</span>
+            {% else %}<span class="badge bg-success">Despatched to Court</span>{% endif %}
+          </td>
+        </tr>
       </table>
     </div>
   </div>
-  <hr>
-  <h6 class="fw-semibold mb-3 text-muted small text-uppercase">Report Content</h6>
-  <div style="white-space:pre-wrap; font-family:inherit; font-size:.9rem; line-height:1.7;">{{ report.content or 'No content.' }}</div>
+
+  <!-- PATIENT / SUBJECT DETAILS -->
+  <div class="bg-light p-3 rounded mb-4 border">
+    <h6 class="fw-bold text-uppercase small text-secondary mb-2"><i class="bi bi-person-fill me-1"></i> Patient / Subject Information</h6>
+    <div class="row g-2">
+      <div class="col-md-4"><strong>Full Name:</strong> {{ report.patient_name or 'Unidentified / Unknown' }}</div>
+      <div class="col-md-4"><strong>NIC / Passport:</strong> {{ report.patient_nic or 'N/A' }}</div>
+      <div class="col-md-4"><strong>Gender / Age:</strong> {{ report.patient_gender or 'N/A' }} / {{ report.patient_age or 'N/A' }} yrs</div>
+      <div class="col-md-8"><strong>Address:</strong> {{ report.patient_address or 'N/A' }}</div>
+      <div class="col-md-4"><strong>Occupation:</strong> {{ report.patient_occupation or 'N/A' }}</div>
+    </div>
+  </div>
+
+  <!-- EXAMINATION DETAILS -->
+  {% if postmortem %}
+  <div class="mb-4">
+    <h6 class="fw-bold text-uppercase border-bottom pb-2 text-primary"><i class="bi bi-activity me-1"></i> Postmortem Examination Findings</h6>
+    <table class="table table-sm table-bordered">
+      <tr><th style="width:200px" class="bg-light">Date & Time of Death</th><td>{{ postmortem.date_time_of_death or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">Place of Examination</th><td>{{ postmortem.place_of_examination or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">Scene Description</th><td>{{ postmortem.scene_description or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">External Exam Findings</th><td>{{ postmortem.external_exam_description or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">Rigor Mortis / Hypostasis</th><td>{{ postmortem.rigor_mortis or 'N/A' }} / {{ postmortem.hypostasis or 'N/A' }}</td></tr>
+      <tr class="table-warning"><th class="fw-bold">Cause of Death</th><td class="fw-bold text-danger">{{ postmortem.cause_of_death or 'Pending Analysis' }}</td></tr>
+      <tr><th class="bg-light">Medical Conclusion</th><td>{{ postmortem.conclusion or 'N/A' }}</td></tr>
+    </table>
+
+    {% if organs %}
+    <h6 class="fw-bold text-uppercase small text-secondary mt-3 mb-2">Organ Findings</h6>
+    <table class="table table-sm table-striped">
+      <thead><tr><th>Organ Name</th><th>Pathological Findings</th></tr></thead>
+      <tbody>
+        {% for o in organs %}
+        <tr><td class="fw-semibold" style="width:180px">{{ o.organ_name }}</td><td>{{ o.findings }}</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% if clinical %}
+  <div class="mb-4">
+    <h6 class="fw-bold text-uppercase border-bottom pb-2 text-primary"><i class="bi bi-file-medical me-1"></i> Clinical Examination Findings</h6>
+    <table class="table table-sm table-bordered">
+      <tr><th style="width:200px" class="bg-light">History Given</th><td>{{ clinical.history_given or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">Place of Examination</th><td>{{ clinical.place_of_exam or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">Hospital / Ward / Bed</th><td>{{ clinical.hospital_no or 'N/A' }} / Ward {{ clinical.ward or 'N/A' }} / Bed {{ clinical.bed_no or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">Alcohol / Drug Influence</th><td>Alcohol: {{ clinical.under_influence_alcohol or 'No' }} | Drugs: {{ clinical.under_influence_drugs or 'No' }}</td></tr>
+      <tr><th class="bg-light">Investigations Ordered</th><td>{{ clinical.investigations_ordered or 'N/A' }}</td></tr>
+      <tr><th class="bg-light">Medical Opinion</th><td>{{ clinical.other_opinions or 'N/A' }}</td></tr>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- INJURIES TABLE -->
+  {% if injuries %}
+  <div class="mb-4">
+    <h6 class="fw-bold text-uppercase border-bottom pb-2 text-danger"><i class="bi bi-bandaid me-1"></i> Recorded Injuries & Penal Code Classification</h6>
+    <table class="table table-sm table-bordered">
+      <thead class="table-light">
+        <tr>
+          <th>#</th><th>Nature of Injury</th><th>Site</th><th>Causative Weapon</th><th>Category of Hurt</th><th>Grievous Clause</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inj in injuries %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><strong>{{ inj.nature }}</strong> ({{ inj.size_shape or 'N/A' }})</td>
+          <td>{{ inj.site }}</td>
+          <td>{{ inj.causative_weapon }}</td>
+          <td>
+            <span class="badge {% if inj.category_of_hurt == 'Grievous' %}bg-danger{% elif 'Fatal' in inj.category_of_hurt %}bg-dark{% else %}bg-warning text-dark{% endif %}">
+              {{ inj.category_of_hurt }}
+            </span>
+          </td>
+          <td>{{ inj.grievous_clause_desc or inj.grievous_hurt_clause_code or 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- OFFICIAL SIGNATURE & STAMP BOX -->
+  <div class="row mt-5 pt-4 border-top">
+    <div class="col-6">
+      <div class="p-3 border rounded bg-light text-center">
+        <small class="text-muted d-block mb-1">OFFICIAL HOSPITAL / DEPARTMENT SEAL</small>
+        <div style="height:60px; display:flex; align-items:center; justify-content:center;" class="text-muted fst-italic">
+          [ OFFICIAL MEDICO-LEGAL SEAL STAMP ]
+        </div>
+      </div>
+    </div>
+    <div class="col-6 text-end">
+      <div class="d-inline-block text-center">
+        <div class="signature-line mb-2"></div>
+        <strong class="d-block">{{ report.prepared_by_name }}</strong>
+        <span class="text-muted small d-block">{{ report.staff_designation or 'Judicial Medical Officer' }}</span>
+        <span class="text-muted small d-block">SLMC Reg. No: <strong>{{ report.slmc_regno or 'N/A' }}</strong></span>
+        <span class="text-muted small d-block">Issued Date: {{ report.date_issued.strftime('%Y-%m-%d') if report.date_issued else 'N/A' }}</span>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}
