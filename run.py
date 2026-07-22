@@ -31,9 +31,15 @@ def init_db():
     )
 
     cur.execute(seed_sql)
+    
+    print("Applying database-level security (Triggers, Procs, Roles)...")
+    with open('db_schema/db_security.sql') as f:
+        security_sql = f.read()
+    cur.execute(security_sql)
+
     conn.commit()
     conn.close()
-    print("Database schema and seed data created successfully.")
+    print("Database schema, seed data, and security rules applied successfully.")
     print("Default users created with password: password123")
     print("Done. Run 'python run.py' or 'flask run' to start the server.")
 
