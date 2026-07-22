@@ -44,7 +44,6 @@ INSERT INTO patient (patient_id, full_name, nic_passportno, dob, age, gender, ad
  (1, 'Nimal Perera',           '198512345678',  '1985-03-12', 41, 'M', '45 Galle Road, Colombo 03',        'Driver'),
  (2, 'Kamala Wijesinghe',      '199234567891',  '1992-07-01', 33, 'F', '12 Kandy Road, Kadawatha',          'Teacher'),
  (3, 'Sunil Rathnayake',       '197845612378',  '1978-11-20', 47, 'M', '78 Peradeniya Road, Kandy',         'Farmer'),
- (4, 'Unknown Male #A-2026-14', NULL,           NULL,          NULL, 'Unknown', 'N/A (unidentified remains found, Mahaweli riverbank)', NULL),
  (5, 'Anusha Fernando',        '200156789012',  '2001-05-09', 25, 'F', '9 Station Road, Gampaha',           'Undergraduate'),
  (6, 'Piyadasa Gunasekara',    '196512378945',  '1965-01-30', 61, 'M', '23 Temple Lane, Matale',            'Retired'),
  (7, 'Sarath Wickramasinghe',  '197923456789',  '1979-04-15', 47, 'M', '12 Main Street, Negombo',           'Business Owner'),
@@ -112,7 +111,7 @@ INSERT INTO case_master
  (4, 'MLC/2026/0145', 'B/101/26',  'Skeletal Remains',
      'MT/0789/26', 'MC/MAT/077/26', 'FMD/077/26',
      '2026-05-20 00:00', '2026-06-01 11:00', NULL,
-     'Awaiting Lab', 4, 4, 5, NULL, 4, 4),
+     'Awaiting Lab', NULL, 4, 5, NULL, 4, 4),
 
  -- Case 5: Natural Death (Ischaemic Heart Disease)
  (5, 'MLC/2026/0146', 'B/102/26',  'Natural/Accidental Death',

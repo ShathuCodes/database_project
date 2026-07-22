@@ -34,12 +34,12 @@
     <span class="text-muted small">Issued for Judicial & Medico-Legal Proceedings</span>
   </div>
   <div class="d-flex gap-2">
-    <button onclick="window.print()" class="btn btn-sm btn-primary">
-      <i class="bi bi-printer me-1"></i> Print / Save as PDF
-    </button>
-    <a href="{{ url_for('reports.download_txt', rid=report.report_id) }}" class="btn btn-sm btn-outline-success">
-      <i class="bi bi-download me-1"></i> Download TXT
+    <a href="{{ url_for('reports.download_pdf', rid=report.report_id) }}" class="btn btn-sm btn-danger">
+      <i class="bi bi-file-earmark-pdf me-1"></i> Download PDF
     </a>
+    <button onclick="window.print()" class="btn btn-sm btn-outline-primary">
+      <i class="bi bi-printer me-1"></i> Print / Browser PDF
+    </button>
     {% if current_user.role in ('Administrator','Senior JMO','JMO') %}
     <a href="{{ url_for('reports.edit_report', rid=report.report_id) }}" class="btn btn-sm btn-outline-warning">
       <i class="bi bi-pencil me-1"></i> Edit Report

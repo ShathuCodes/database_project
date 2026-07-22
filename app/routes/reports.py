@@ -1,7 +1,13 @@
+import io
 from flask import Blueprint, render_template, request, redirect, url_for, flash, Response
 from flask_login import login_required, current_user
 from app.helpers import roles_required, ALL_ROLES, CLINICAL
 from app import database
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 
 reports_bp = Blueprint('reports', __name__)
 
@@ -38,10 +44,7 @@ def list_reports():
                            statuses=STATUSES, search=search, report_type=report_type, status=status)
 
 
-@reports_bp.route('/<int:rid>/view')
-@login_required
-@roles_required(*ALL_ROLES)
-def view_report(rid):
+def _get_report_full_details(rid):
     report = database.fetchone(
         """SELECT r.*, cm.case_number, cm.inquest_no, cm.case_type, cm.police_refno, cm.court_refno,
                   cm.dept_refno, cm.incident_date, cm.received_date, cm.status AS case_status,
@@ -60,10 +63,8 @@ def view_report(rid):
            WHERE r.report_id = %s""", (rid,)
     )
     if not report:
-        flash('Report not found.', 'danger')
-        return redirect(url_for('reports.list_reports'))
+        return None, None, None, None, None, [], []
 
-    # Fetch Event details
     event = None
     clinical = None
     postmortem = None
@@ -89,58 +90,203 @@ def view_report(rid):
                WHERE inj.event_id = %s""", (report['event_id'],)
         )
 
-    return render_template('reports/view.html', report=report, event=event, clinical=clinical,
-                           postmortem=postmortem, skeletal=skeletal, injuries=injuries, organs=organs)
+    return report, event, clinical, postmortem, skeletal, injuries, organs
 
 
-@reports_bp.route('/<int:rid>/download-txt')
+@reports_bp.route('/<int:rid>/view')
 @login_required
 @roles_required(*ALL_ROLES)
-def download_txt(rid):
-    report = database.fetchone(
-        """SELECT r.*, cm.case_number, cm.case_type, p.full_name AS patient_name,
-                  s.full_name AS prepared_by_name, s.slmc_regno, s.station AS staff_station
-           FROM report r
-           JOIN case_master cm ON cm.case_id = r.case_id
-           LEFT JOIN patient p ON p.patient_id = cm.patient_id
-           LEFT JOIN staff s ON s.staff_id = r.prepared_by_staff_id
-           WHERE r.report_id = %s""", (rid,)
-    )
+def view_report(rid):
+    report, event, clinical, postmortem, skeletal, injuries, organs = _get_report_full_details(rid)
     if not report:
         flash('Report not found.', 'danger')
         return redirect(url_for('reports.list_reports'))
 
-    content = f"""================================================================================
-OFFICIAL FORENSIC MEDICO-LEGAL REPORT
-DEPARTMENT OF FORENSIC MEDICINE & MEDICO-LEGAL SERVICES
-================================================================================
+    return render_template('reports/view.html', report=report, event=event, clinical=clinical,
+                           postmortem=postmortem, skeletal=skeletal, injuries=injuries, organs=organs)
 
-REPORT TYPE        : {report['report_type']}
-SERIAL NUMBER      : {report['serial_no'] or 'N/A'}
-CASE NUMBER        : {report['case_number']}
-CASE TYPE          : {report['case_type']}
-PATIENT / SUBJECT  : {report['patient_name'] or 'N/A'}
-ISSUING OFFICER    : {report['prepared_by_name']} (SLMC Reg: {report['slmc_regno'] or 'N/A'})
-STATION            : {report['staff_station'] or 'N/A'}
-DATE ISSUED        : {report['date_issued'].strftime('%Y-%m-%d %H:%M') if report['date_issued'] else 'N/A'}
-STATUS             : {report['status']}
 
---------------------------------------------------------------------------------
-SUMMARY & CONCLUSION
---------------------------------------------------------------------------------
-This report serves as an official medico-legal record issued for judicial
-and investigative proceedings. All examination findings, injury classifications,
-and medical opinions documented herein are verified under SLMC regulations.
+@reports_bp.route('/<int:rid>/download-pdf')
+@login_required
+@roles_required(*ALL_ROLES)
+def download_pdf(rid):
+    report, event, clinical, postmortem, skeletal, injuries, organs = _get_report_full_details(rid)
+    if not report:
+        flash('Report not found.', 'danger')
+        return redirect(url_for('reports.list_reports'))
 
-Prepared By: {report['prepared_by_name']}
-Signature  : ___________________________
-Date       : {report['date_issued'].strftime('%Y-%m-%d') if report['date_issued'] else 'N/A'}
-================================================================================
-"""
-    filename = f"Report_{report['case_number'].replace('/', '_')}_{report['report_type']}.txt"
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, leftMargin=36, rightMargin=36, topMargin=36, bottomMargin=36)
+    story = []
+
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'DocTitle',
+        parent=styles['Heading1'],
+        fontName='Helvetica-Bold',
+        fontSize=14,
+        leading=18,
+        alignment=1,
+        textColor=colors.HexColor('#1e293b')
+    )
+    subtitle_style = ParagraphStyle(
+        'DocSubTitle',
+        parent=styles['Normal'],
+        fontName='Helvetica',
+        fontSize=10,
+        leading=14,
+        alignment=1,
+        textColor=colors.HexColor('#475569')
+    )
+    section_heading = ParagraphStyle(
+        'SectionHeading',
+        parent=styles['Heading2'],
+        fontName='Helvetica-Bold',
+        fontSize=11,
+        leading=14,
+        textColor=colors.HexColor('#0f172a'),
+        spaceBefore=10,
+        spaceAfter=6
+    )
+    cell_text = ParagraphStyle('CellText', parent=styles['Normal'], fontName='Helvetica', fontSize=9, leading=12)
+    cell_bold = ParagraphStyle('CellBold', parent=styles['Normal'], fontName='Helvetica-Bold', fontSize=9, leading=12)
+
+    # Header Section
+    story.append(Paragraph("DEPARTMENT OF FORENSIC MEDICINE & MEDICO-LEGAL SERVICES", title_style))
+    story.append(Spacer(1, 4))
+    station_txt = report['staff_station'] or 'Judicial Medical Officer Office'
+    story.append(Paragraph(f"{station_txt} — Official Judicial Report", subtitle_style))
+    story.append(Spacer(1, 8))
+    story.append(Paragraph(f"OFFICIAL {report['report_type']} (MEDICO-LEGAL REPORT)", ParagraphStyle('RepHeader', parent=title_style, fontSize=12, textColor=colors.HexColor('#1d4ed8'))))
+    story.append(Spacer(1, 10))
+    story.append(HRFlowable(width="100%", thickness=1.5, color=colors.HexColor('#0284c7'), spaceAfter=12))
+
+    # Case & Metadata Table
+    meta_data = [
+        [Paragraph("Case Number:", cell_bold), Paragraph(str(report['case_number']), cell_text), Paragraph("Court:", cell_bold), Paragraph(str(report['court_name'] or 'N/A'), cell_text)],
+        [Paragraph("Serial No:", cell_bold), Paragraph(str(report['serial_no'] or 'N/A'), cell_text), Paragraph("Magistrate:", cell_bold), Paragraph(str(report['magistrate_name'] or 'N/A'), cell_text)],
+        [Paragraph("Case Type:", cell_bold), Paragraph(str(report['case_type']), cell_text), Paragraph("Date Issued:", cell_bold), Paragraph(str(report['date_issued'].strftime('%Y-%m-%d %H:%M') if report['date_issued'] else 'N/A'), cell_text)],
+        [Paragraph("Police Station:", cell_bold), Paragraph(str(report['police_station'] or 'N/A'), cell_text), Paragraph("Report Status:", cell_bold), Paragraph(str(report['status']), cell_text)]
+    ]
+    t_meta = Table(meta_data, colWidths=[100, 160, 100, 160])
+    t_meta.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor('#f8fafc')),
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#cbd5e1')),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+    ]))
+    story.append(t_meta)
+    story.append(Spacer(1, 12))
+
+    # Patient Details Table
+    story.append(Paragraph("Patient / Subject Information", section_heading))
+    patient_data = [
+        [Paragraph("Full Name:", cell_bold), Paragraph(str(report['patient_name'] or 'Unidentified'), cell_text), Paragraph("NIC/Passport:", cell_bold), Paragraph(str(report['patient_nic'] or 'N/A'), cell_text)],
+        [Paragraph("Gender / Age:", cell_bold), Paragraph(f"{report['patient_gender'] or 'N/A'} / {report['patient_age'] or 'N/A'} yrs", cell_text), Paragraph("Occupation:", cell_bold), Paragraph(str(report['patient_occupation'] or 'N/A'), cell_text)],
+        [Paragraph("Address:", cell_bold), Paragraph(str(report['patient_address'] or 'N/A'), cell_text), Paragraph("", cell_text), Paragraph("", cell_text)]
+    ]
+    t_patient = Table(patient_data, colWidths=[100, 160, 100, 160])
+    t_patient.setStyle(TableStyle([
+        ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#cbd5e1')),
+        ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+        ('TOPPADDING', (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('SPAN', (1,2), (3,2))
+    ]))
+    story.append(t_patient)
+    story.append(Spacer(1, 12))
+
+    # Postmortem / Clinical Examination Findings
+    if postmortem:
+        story.append(Paragraph("Postmortem Examination Findings", section_heading))
+        pm_data = [
+            [Paragraph("Time of Death:", cell_bold), Paragraph(str(postmortem['date_time_of_death'] or 'N/A'), cell_text)],
+            [Paragraph("Place of Exam:", cell_bold), Paragraph(str(postmortem['place_of_examination'] or 'N/A'), cell_text)],
+            [Paragraph("Scene Info:", cell_bold), Paragraph(str(postmortem['scene_description'] or 'N/A'), cell_text)],
+            [Paragraph("External Findings:", cell_bold), Paragraph(str(postmortem['external_exam_description'] or 'N/A'), cell_text)],
+            [Paragraph("Cause of Death:", cell_bold), Paragraph(str(postmortem['cause_of_death'] or 'Pending Analysis'), ParagraphStyle('COD', parent=cell_bold, textColor=colors.HexColor('#dc2626')))],
+            [Paragraph("Medical Conclusion:", cell_bold), Paragraph(str(postmortem['conclusion'] or 'N/A'), cell_text)]
+        ]
+        t_pm = Table(pm_data, colWidths=[130, 390])
+        t_pm.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f1f5f9')),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#cbd5e1')),
+            ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('TOPPADDING', (0,0), (-1,-1), 5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ]))
+        story.append(t_pm)
+        story.append(Spacer(1, 12))
+
+    if clinical:
+        story.append(Paragraph("Clinical Examination Findings", section_heading))
+        clin_data = [
+            [Paragraph("History Given:", cell_bold), Paragraph(str(clinical['history_given'] or 'N/A'), cell_text)],
+            [Paragraph("Place of Exam:", cell_bold), Paragraph(str(clinical['place_of_exam'] or 'N/A'), cell_text)],
+            [Paragraph("Alcohol / Drugs:", cell_bold), Paragraph(f"Alcohol: {clinical['under_influence_alcohol'] or 'No'} | Drugs: {clinical['under_influence_drugs'] or 'No'}", cell_text)],
+            [Paragraph("Medical Opinion:", cell_bold), Paragraph(str(clinical['other_opinions'] or 'N/A'), cell_text)]
+        ]
+        t_clin = Table(clin_data, colWidths=[130, 390])
+        t_clin.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (0,-1), colors.HexColor('#f1f5f9')),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#cbd5e1')),
+            ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+            ('TOPPADDING', (0,0), (-1,-1), 5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ]))
+        story.append(t_clin)
+        story.append(Spacer(1, 12))
+
+    # Injuries Table
+    if injuries:
+        story.append(Paragraph("Recorded Injuries & Penal Code Classification", section_heading))
+        inj_rows = [[Paragraph("#", cell_bold), Paragraph("Nature of Injury", cell_bold), Paragraph("Site", cell_bold), Paragraph("Weapon", cell_bold), Paragraph("Category", cell_bold), Paragraph("Grievous Clause", cell_bold)]]
+        for idx, inj in enumerate(injuries, 1):
+            inj_rows.append([
+                Paragraph(str(idx), cell_text),
+                Paragraph(f"<b>{inj['nature']}</b><br/>{inj['size_shape'] or ''}", cell_text),
+                Paragraph(str(inj['site']), cell_text),
+                Paragraph(str(inj['causative_weapon']), cell_text),
+                Paragraph(str(inj['category_of_hurt']), cell_text),
+                Paragraph(str(inj['grievous_clause_desc'] or inj['grievous_hurt_clause_code'] or 'N/A'), cell_text)
+            ])
+        t_inj = Table(inj_rows, colWidths=[20, 130, 100, 90, 80, 100])
+        t_inj.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#fee2e2')),
+            ('BOX', (0,0), (-1,-1), 1, colors.HexColor('#fca5a5')),
+            ('INNERGRID', (0,0), (-1,-1), 0.5, colors.HexColor('#fecaca')),
+            ('TOPPADDING', (0,0), (-1,-1), 5),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ]))
+        story.append(t_inj)
+        story.append(Spacer(1, 15))
+
+    # Signature Block Table
+    sig_data = [
+        [
+            Paragraph("<b>OFFICIAL HOSPITAL / DEPT SEAL</b><br/><br/><br/>[ SEAL STAMP ]", ParagraphStyle('Seal', parent=cell_text, alignment=1)),
+            Paragraph(f"<b>Prepared By:</b> {report['prepared_by_name']}<br/><b>Designation:</b> {report['staff_designation'] or 'Judicial Medical Officer'}<br/><b>SLMC Reg No:</b> {report['slmc_regno'] or 'N/A'}<br/><b>Date:</b> {report['date_issued'].strftime('%Y-%m-%d') if report['date_issued'] else 'N/A'}<br/><br/>_______________________________<br/>Doctor Signature", cell_text)
+        ]
+    ]
+    t_sig = Table(sig_data, colWidths=[250, 270])
+    t_sig.setStyle(TableStyle([
+        ('BOX', (0,0), (0,0), 1, colors.HexColor('#94a3b8')),
+        ('BACKGROUND', (0,0), (0,0), colors.HexColor('#f8fafc')),
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('TOPPADDING', (0,0), (-1,-1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 10),
+    ]))
+    story.append(t_sig)
+
+    doc.build(story)
+    buffer.seek(0)
+    pdf_data = buffer.getvalue()
+
+    filename = f"Report_{report['case_number'].replace('/', '_')}_{report['report_type']}.pdf"
     return Response(
-        content,
-        mimetype="text/plain",
+        pdf_data,
+        mimetype="application/pdf",
         headers={"Content-Disposition": f"attachment;filename={filename}"}
     )
 
