@@ -1,3 +1,45 @@
+# Environments & Virtual Environments
+venv/
+venv312/
+venv*/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Environment Variables & Secrets
+.env
+.env.*
+*.env
+
+# Python Cache & Compiled Files
 __pycache__/
-.env*
-venv2/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Flask & SQLite
+instance/
+*.sqlite
+*.sqlite3
+*.db
+
+# Logs & Temporary Files
+*.log
+*.tmp
+*.temp
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Distribution / Packaging / Builds
+build/
+dist/
+*.egg-info/
+.eggs/
