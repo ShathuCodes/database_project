@@ -5,41 +5,40 @@ app = create_app()
 
 @app.cli.command('init-db')
 def init_db():
-    """Create tables and seed sample data with a real bcrypt hash for all demo users."""
-    # pyrefly: ignore [missing-import]
+    """Create tables, views, triggers, stored procedures, security rules, and seed sample data."""
     import bcrypt
     from app import database
-    print("Creating schema...")
-    with open('db_schema/schema.sql') as f:
-        schema = f.read()
+
     conn = database.get_connection()
     cur  = conn.cursor()
-    cur.execute(schema)
-    conn.commit()
 
-    print("Seeding database...")
-    with open('db_schema/seed.sql') as f:
-        seed_sql = f.read()
+    sql_files = [
+        ('01_ddl_schema.sql', 'Creating DDL schema & indexes...'),
+        ('02_dml_seed_data.sql', 'Seeding initial database records...'),
+        ('03_views.sql', 'Creating analytical views...'),
+        ('04_triggers_and_functions.sql', 'Creating audit & status triggers...'),
+        ('05_stored_procedures.sql', 'Creating stored procedures...'),
+        ('06_security_and_rbac.sql', 'Applying database-level security & RBAC...'),
+    ]
 
-    # seed.sql ships with one placeholder bcrypt hash reused for every demo
-    # user (login password "password123"); swap it for a freshly-generated
-    # hash so the app can actually verify it.
     pw_hash = bcrypt.hashpw(b'password123', bcrypt.gensalt()).decode()
-    seed_sql = seed_sql.replace(
-        '$2b$12$KIXQwYyN2s0Z0m7C7d1uWuU4o9v4b1K3f8N1qz1s0lQe5T1c1YB0e',
-        pw_hash
-    )
 
-    cur.execute(seed_sql)
-    
-    print("Applying database-level security (Triggers, Procs, Roles)...")
-    with open('db_schema/db_security.sql') as f:
-        security_sql = f.read()
-    cur.execute(security_sql)
+    for filename, msg in sql_files:
+        print(msg)
+        with open(f'db_schema/{filename}', 'r', encoding='utf-8') as f:
+            sql_content = f.read()
 
-    conn.commit()
+        if filename == '02_dml_seed_data.sql':
+            sql_content = sql_content.replace(
+                '$2b$12$KIXQwYyN2s0Z0m7C7d1uWuU4o9v4b1K3f8N1qz1s0lQe5T1c1YB0e',
+                pw_hash
+            )
+
+        cur.execute(sql_content)
+        conn.commit()
+
     conn.close()
-    print("Database schema, seed data, and security rules applied successfully.")
+    print("Database schema, seed data, views, triggers, stored procedures, and security rules loaded successfully.")
     print("Default users created with password: password123")
     print("Done. Run 'python run.py' or 'flask run' to start the server.")
 
