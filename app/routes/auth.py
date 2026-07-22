@@ -13,10 +13,10 @@ auth_bp = Blueprint('auth', __name__)
 # except Clerk/Lab Technician staff use the matching STAFF.designation)
 REGISTER_ROLES = ['JMO', 'Senior JMO', 'Lab Technician', 'Clerk']
 DESIGNATION_FOR_ROLE = {
-    'Senior JMO': 'Senior JMO',
-    'JMO': 'JMO',
-    'Lab Technician': 'Tech Officer',
-    'Clerk': 'Clerk',
+    'Senior JMO':    'Senior JMO',
+    'JMO':           'JMO',
+    'Lab Technician':'Tech Officer',
+    'Clerk':         'Clerk',
 }
 
 
@@ -34,15 +34,27 @@ def _verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
+# ── Landing page ──────────────────────────────────────────────────────────────
 @auth_bp.route('/')
 def index():
+    """Root route: authenticated → dashboard, otherwise → landing page."""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.home'))
-    return redirect(url_for('auth.login'))
+    return redirect(url_for('auth.landing'))
 
 
+@auth_bp.route('/landing')
+def landing():
+    """Public marketing / landing page."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.home'))
+    return render_template('landing.html')
+
+
+# ── Sign In ────────────────────────────────────────────────────────────────────
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    """Sign-in page (GET) and authentication handler (POST)."""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.home'))
 
@@ -50,72 +62,114 @@ def login():
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '')
 
+        if not username or not password:
+            flash('Please enter both username and password.', 'danger')
+            return render_template('signin.html')
+
         row = database.fetchone(
-            """SELECT u.*, r.role_name AS role
-               FROM app_user u JOIN role r ON r.role_id = u.role_id
-               WHERE u.username = %s AND u.is_active = TRUE""",
+            """SELECT u.user_id, u.username, u.password_hash, u.staff_id,
+                      u.is_active, r.role_name AS role
+               FROM app_user u
+               JOIN role r ON r.role_id = u.role_id
+               WHERE u.username = %s""",
             (username,)
         )
-        if row and _verify_password(password, row['password_hash']):
-            user = User(row['user_id'], row['username'],
-                        row['role'], row['staff_id'], row['is_active'])
-            login_user(user)
+
+        if not row:
+            flash('Invalid username or password.', 'danger')
+            return render_template('signin.html')
+
+        if not row.get('is_active'):
+            flash('Your account has been deactivated. Please contact the administrator.', 'warning')
+            return render_template('signin.html')
+
+        if not _verify_password(password, row['password_hash']):
+            flash('Invalid username or password.', 'danger')
+            return render_template('signin.html')
+
+        # Successful login
+        user = User(row['user_id'], row['username'],
+                    row['role'], row['staff_id'], row['is_active'])
+        login_user(user)
+
+        try:
             database.execute(
                 "UPDATE app_user SET last_login = NOW() WHERE user_id = %s",
                 (row['user_id'],)
             )
-            database.log_action(row['user_id'], 'UPDATE', 'app_user',
-                                 row['user_id'], None, f"User {username} logged in",
-                                 request.remote_addr)
-            flash(f'Welcome back, {username}!', 'success')
-            return redirect(request.args.get('next') or url_for('dashboard.home'))
-        else:
-            flash('Invalid username or password.', 'danger')
+            database.log_action(
+                row['user_id'], 'UPDATE', 'app_user',
+                row['user_id'], None, f"User {username} logged in",
+                request.remote_addr
+            )
+        except Exception as e:
+            # Non-fatal: login succeeded, logging failed
+            print(f"Warning: could not update last_login or audit log: {e}")
 
-    active_tab = request.args.get('tab', 'login')
-    if active_tab not in ('login', 'register'):
-        active_tab = 'login'
-    return render_template('login.html', active_tab=active_tab, register_roles=REGISTER_ROLES)
+        flash(f'Welcome back, {username}!', 'success')
+        next_url = request.args.get('next') or url_for('dashboard.home')
+        return redirect(next_url)
+
+    # GET
+    return render_template('signin.html')
 
 
+# ── Sign Up (GET) ──────────────────────────────────────────────────────────────
+@auth_bp.route('/register', methods=['GET'])
+def register_page():
+    """Sign-up page."""
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard.home'))
+    return render_template('signup.html', register_roles=REGISTER_ROLES)
+
+
+# ── Sign Up (POST) ─────────────────────────────────────────────────────────────
 @auth_bp.route('/register', methods=['POST'])
 def register():
+    """Process the registration form."""
     if current_user.is_authenticated:
         return redirect(url_for('dashboard.home'))
 
-    full_name = request.form.get('full_name', '').strip()
-    username = request.form.get('reg_username', '').strip()
-    password = request.form.get('reg_password', '')
+    full_name        = request.form.get('full_name', '').strip()
+    username         = request.form.get('reg_username', '').strip()
+    password         = request.form.get('reg_password', '')
     confirm_password = request.form.get('reg_password_confirm', '')
-    role = request.form.get('role', '').strip()
+    role             = request.form.get('role', '').strip()
 
-    if not (full_name and username and password and confirm_password and role):
-        flash('All fields are required for registration.', 'danger')
-        return redirect(url_for('auth.login', tab='register'))
+    # ── Validate ──────────────────────────────────────────────
+    def _fail(msg):
+        flash(msg, 'danger')
+        return render_template('signup.html', register_roles=REGISTER_ROLES)
+
+    if not all([full_name, username, password, confirm_password, role]):
+        return _fail('All fields are required for registration.')
+
+    if len(username) < 3:
+        return _fail('Username must be at least 3 characters.')
 
     if len(password) < 6:
-        flash('Password must be at least 6 characters.', 'danger')
-        return redirect(url_for('auth.login', tab='register'))
+        return _fail('Password must be at least 6 characters.')
 
     if password != confirm_password:
-        flash('Passwords do not match.', 'danger')
-        return redirect(url_for('auth.login', tab='register'))
+        return _fail('Passwords do not match.')
 
     if role not in REGISTER_ROLES:
-        flash('Invalid role selected.', 'danger')
-        return redirect(url_for('auth.login', tab='register'))
+        return _fail('Invalid role selected.')
 
-    existing = database.fetchone("SELECT user_id FROM app_user WHERE username = %s", (username,))
+    existing = database.fetchone(
+        "SELECT user_id FROM app_user WHERE username = %s", (username,)
+    )
     if existing:
-        flash('Username already exists.', 'danger')
-        return redirect(url_for('auth.login', tab='register'))
+        return _fail('That username is already taken. Please choose another.')
 
-    role_row = database.fetchone("SELECT role_id FROM role WHERE role_name = %s", (role,))
+    role_row = database.fetchone(
+        "SELECT role_id FROM role WHERE role_name = %s", (role,)
+    )
     if not role_row:
-        flash('Role is not configured. Contact the administrator.', 'danger')
-        return redirect(url_for('auth.login', tab='register'))
+        return _fail('The selected role is not configured. Contact the administrator.')
 
-    hashed = _hash_password(password)
+    # ── Create staff + user ───────────────────────────────────
+    hashed      = _hash_password(password)
     designation = DESIGNATION_FOR_ROLE.get(role, 'Clerk')
 
     try:
@@ -131,25 +185,33 @@ def register():
             (username, hashed, role_row['role_id'], staff_id), returning=True
         )
 
-        database.log_action(new_user['user_id'], 'INSERT', 'app_user',
-                             new_user['user_id'], None, f"New user {username} registered",
-                             request.remote_addr)
+        database.log_action(
+            new_user['user_id'], 'INSERT', 'app_user',
+            new_user['user_id'], None, f"New user {username} registered",
+            request.remote_addr
+        )
 
-        flash('Registration successful! Please sign in.', 'success')
+        flash('Account created successfully! Please sign in.', 'success')
+        return redirect(url_for('auth.login'))
+
     except Exception as e:
-        flash('Registration failed due to a server error.', 'danger')
         print(f"Error during registration: {e}")
-        return redirect(url_for('auth.login', tab='register'))
-
-    return redirect(url_for('auth.login'))
+        return _fail('Registration failed due to a server error. Please try again.')
 
 
+# ── Logout ─────────────────────────────────────────────────────────────────────
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    database.log_action(current_user.id, 'UPDATE', 'app_user',
-                         current_user.id, None, f"User {current_user.username} logged out",
-                         request.remote_addr)
+    try:
+        database.log_action(
+            current_user.id, 'UPDATE', 'app_user',
+            current_user.id, None, f"User {current_user.username} logged out",
+            request.remote_addr
+        )
+    except Exception as e:
+        print(f"Warning: logout audit log failed: {e}")
+
     logout_user()
-    flash('You have been logged out.', 'info')
+    flash('You have been logged out successfully.', 'info')
     return redirect(url_for('auth.login'))
